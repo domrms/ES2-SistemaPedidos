@@ -1,0 +1,50 @@
+# .github/workflows/develop-to-homolog.yml
+name: Develop → Homolog PR
+
+on:
+  push:
+    branches:
+      - develop
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: develop-to-homolog
+  cancel-in-progress: true
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check existing PR
+        id: check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              base: "homolog",
+              head: `${context.repo.owner}:develop`
+            });
+
+            core.setOutput("exists", data.length > 0 ? "true" : "false");
+
+      - name: Create PR
+        if: steps.check.outputs.exists == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: "Promote develop → homolog",
+              head: "develop",
+              base: "homolog",
+              body: "PR automático de promoção para homolog.",
+              maintainer_can_modify: true
+            });

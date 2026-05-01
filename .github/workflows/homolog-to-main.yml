@@ -1,0 +1,50 @@
+# .github/workflows/homolog-to-main.yml
+name: Homolog → Main PR
+
+on:
+  push:
+    branches:
+      - homolog
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: homolog-to-main
+  cancel-in-progress: true
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check existing PR
+        id: check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              base: "main",
+              head: `${context.repo.owner}:homolog`
+            });
+
+            core.setOutput("exists", data.length > 0 ? "true" : "false");
+
+      - name: Create PR
+        if: steps.check.outputs.exists == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: "Release homolog → main",
+              head: "homolog",
+              base: "main",
+              body: "PR automático de release para produção.",
+              maintainer_can_modify: true
+            });
