@@ -7,14 +7,14 @@ namespace ES2_SistemaPedidos.Shared;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddOrderPersistence(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddPersistenciaPedidos(this IServiceCollection servicos, IConfiguration configuracao)
     {
-        var connectionString = configuration.GetConnectionString("OrdersDatabase")
-            ?? configuration["DATABASE_URL"]
-            ?? "Host=localhost;Port=5432;Database=es2_orders;Username=dev;Password=dev";
+        var stringConexao = configuracao.GetConnectionString("BancoPedidos")
+            ?? configuracao["DATABASE_URL"]
+            ?? "Host=localhost;Port=5432;Database=es2_pedidos;Username=dev;Password=dev";
 
-        services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
+        servicos.AddDbContext<ApplicationDbContext>(opcoes => opcoes.UseNpgsql(stringConexao));
 
-        return services;
+        return servicos;
     }
 }

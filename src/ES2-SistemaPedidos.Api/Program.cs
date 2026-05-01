@@ -11,112 +11,119 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.EntityFrameworkCore;
 
-var builder = WebApplication.CreateBuilder(args);
+var construtorAplicacao = WebApplication.CreateBuilder(args);
 
-builder.Services.Configure<JsonOptions>(options =>
+construtorAplicacao.Services.Configure<JsonOptions>(opcoes =>
 {
-    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    opcoes.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
 
-builder.Services.AddOrderPersistence(builder.Configuration);
-builder.Services.AddScoped<OrderService>();
-builder.Services.AddSingleton(TimeProvider.System);
-builder.Services.AddSingleton<IOrderEventPublisher, SnsOrderEventPublisher>();
-builder.Services.AddSingleton<IAmazonSimpleNotificationService>(_ =>
+construtorAplicacao.Services.AddPersistenciaPedidos(construtorAplicacao.Configuration);
+construtorAplicacao.Services.AddScoped<ServicoPedido>();
+construtorAplicacao.Services.AddSingleton(TimeProvider.System);
+construtorAplicacao.Services.AddSingleton<IPublicadorEventoPedido, PublicadorEventoPedidoSns>();
+construtorAplicacao.Services.AddSingleton<IAmazonSimpleNotificationService>(_ =>
 {
-    var regionName = builder.Configuration["AWS_REGION"] ?? builder.Configuration["AWS:Region"] ?? "us-east-1";
-    var config = new AmazonSimpleNotificationServiceConfig
+    var nomeRegiao = construtorAplicacao.Configuration["AWS_REGIAO"]
+        ?? construtorAplicacao.Configuration["AWS_REGION"]
+        ?? construtorAplicacao.Configuration["AWS:Regiao"]
+        ?? construtorAplicacao.Configuration["AWS:Region"]
+        ?? "us-east-1";
+    var configuracaoSns = new AmazonSimpleNotificationServiceConfig
     {
-        RegionEndpoint = RegionEndpoint.GetBySystemName(regionName)
+        RegionEndpoint = RegionEndpoint.GetBySystemName(nomeRegiao)
     };
 
-    var serviceUrl = builder.Configuration["AWS_ENDPOINT_URL"] ?? builder.Configuration["AWS:ServiceUrl"];
-    if (!string.IsNullOrWhiteSpace(serviceUrl))
+    var urlServico = construtorAplicacao.Configuration["AWS_URL_SERVICO"]
+        ?? construtorAplicacao.Configuration["AWS_ENDPOINT_URL"]
+        ?? construtorAplicacao.Configuration["AWS:UrlServico"]
+        ?? construtorAplicacao.Configuration["AWS:ServiceUrl"];
+    if (!string.IsNullOrWhiteSpace(urlServico))
     {
-        config.ServiceURL = serviceUrl;
-        config.AuthenticationRegion = regionName;
-        return new AmazonSimpleNotificationServiceClient(new BasicAWSCredentials("test", "test"), config);
+        configuracaoSns.ServiceURL = urlServico;
+        configuracaoSns.AuthenticationRegion = nomeRegiao;
+        return new AmazonSimpleNotificationServiceClient(new BasicAWSCredentials("test", "test"), configuracaoSns);
     }
 
-    return new AmazonSimpleNotificationServiceClient(config);
+    return new AmazonSimpleNotificationServiceClient(configuracaoSns);
 });
 
-builder.Services
-    .AddAuthentication(SimpleBearerAuthenticationDefaults.AuthenticationScheme)
-    .AddScheme<AuthenticationSchemeOptions, SimpleBearerAuthenticationHandler>(
-        SimpleBearerAuthenticationDefaults.AuthenticationScheme,
-        options => { });
-builder.Services.AddAuthorization();
+construtorAplicacao.Services
+    .AddAuthentication(PadroesAutenticacaoBearerSimples.EsquemaAutenticacao)
+    .AddScheme<AuthenticationSchemeOptions, ManipuladorAutenticacaoBearerSimples>(
+        PadroesAutenticacaoBearerSimples.EsquemaAutenticacao,
+        opcoes => { });
+construtorAplicacao.Services.AddAuthorization();
 
-var app = builder.Build();
+var aplicacao = construtorAplicacao.Build();
 
-app.UseAuthentication();
-app.UseAuthorization();
+aplicacao.UseAuthentication();
+aplicacao.UseAuthorization();
 
-app.MapGet("/api/health", () => Results.Ok(new
+aplicacao.MapGet("/api/saude", () => Results.Ok(new
 {
-    status = "healthy",
-    timestamp = DateTimeOffset.UtcNow,
-    version = "1.0.0"
+    estado = "saudavel",
+    dataHora = DateTimeOffset.UtcNow,
+    versao = "1.0.0"
 }));
 
-var orders = app.MapGroup("/api/orders")
+var pedidos = aplicacao.MapGroup("/api/pedidos")
     .RequireAuthorization();
 
-orders.MapPost("/", async (CreateOrderRequest request, OrderService orderService, HttpContext httpContext, CancellationToken cancellationToken) =>
+pedidos.MapPost("/", async (RequisicaoCriarPedido requisicao, ServicoPedido servicoPedido, HttpContext contextoHttp, CancellationToken tokenCancelamento) =>
 {
-    Result<CreateOrderResponse> result;
+    Resultado<RespostaCriarPedido> resultado;
     try
     {
-        result = await orderService.CreateAsync(request, httpContext.TraceIdentifier, cancellationToken);
+        resultado = await servicoPedido.CreatePedidoAsync(requisicao, contextoHttp.TraceIdentifier, tokenCancelamento);
     }
-    catch (Exception exception) when (IsDependencyFailure(exception))
+    catch (Exception excecao) when (IsFalhaDependencia(excecao))
     {
         return Results.Json(
-            new ErrorResponse("ServiceUnavailable", "Database or messaging service temporarily unavailable", new { retryAfter = 30 }),
+            new RespostaErro("ServicoIndisponivel", "Banco de dados ou mensageria temporariamente indisponivel", new { tentarNovamenteApos = 30 }),
             statusCode: StatusCodes.Status503ServiceUnavailable);
     }
 
-    return result.Match<IResult>(
-        success => Results.Created($"/api/orders/{success.OrderId}", success),
-        validation => Results.BadRequest(validation));
+    return resultado.Match<IResult>(
+        sucesso => Results.Created($"/api/pedidos/{sucesso.PedidoId}", sucesso),
+        validacao => Results.BadRequest(validacao));
 });
 
-orders.MapGet("/{orderId:guid}", async (Guid orderId, OrderService orderService, CancellationToken cancellationToken) =>
+pedidos.MapGet("/{pedidoId:guid}", async (Guid pedidoId, ServicoPedido servicoPedido, CancellationToken tokenCancelamento) =>
 {
-    var order = await orderService.GetByIdAsync(orderId, cancellationToken);
+    var pedido = await servicoPedido.GetPedidoPorIdAsync(pedidoId, tokenCancelamento);
 
-    return order is null
-        ? Results.NotFound(new ErrorResponse("OrderNotFound", $"Order with ID {orderId} not found"))
-        : Results.Ok(order);
+    return pedido is null
+        ? Results.NotFound(new RespostaErro("PedidoNaoEncontrado", $"Pedido com ID {pedidoId} nao encontrado"))
+        : Results.Ok(pedido);
 });
 
-orders.MapGet("/", async (
-    string customerId,
-    OrderStatus? status,
-    int? skip,
-    int? take,
-    DateOnly? dateFrom,
-    DateOnly? dateTo,
-    OrderService orderService,
-    CancellationToken cancellationToken) =>
+pedidos.MapGet("/", async (
+    string clienteId,
+    StatusPedido? status,
+    int? pular,
+    int? quantidade,
+    DateOnly? dataDe,
+    DateOnly? dataAte,
+    ServicoPedido servicoPedido,
+    CancellationToken tokenCancelamento) =>
 {
-    var result = await orderService.ListAsync(customerId, status, skip ?? 0, take ?? 20, dateFrom, dateTo, cancellationToken);
+    var resultado = await servicoPedido.ListPedidosAsync(clienteId, status, pular ?? 0, quantidade ?? 20, dataDe, dataAte, tokenCancelamento);
 
-    return result.Match<IResult>(
-        success => Results.Ok(success),
-        validation => Results.BadRequest(validation));
+    return resultado.Match<IResult>(
+        sucesso => Results.Ok(sucesso),
+        validacao => Results.BadRequest(validacao));
 });
 
-app.Run();
+aplicacao.Run();
 
-static bool IsDependencyFailure(Exception exception)
+static bool IsFalhaDependencia(Exception excecao)
 {
-    return exception is DbUpdateException
+    return excecao is DbUpdateException
         or AmazonServiceException
         or HttpRequestException
-        || exception is InvalidOperationException invalidOperationException
-        && invalidOperationException.Message.Contains("SNS topic ARN", StringComparison.OrdinalIgnoreCase);
+        || excecao is InvalidOperationException invalidOperationException
+        && invalidOperationException.Message.Contains("SNS", StringComparison.OrdinalIgnoreCase);
 }
 
 public partial class Program;

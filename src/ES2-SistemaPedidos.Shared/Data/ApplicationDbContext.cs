@@ -3,86 +3,86 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ES2_SistemaPedidos.Shared.Data;
 
-public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
+public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> opcoes) : DbContext(opcoes)
 {
-    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<Pedido> Pedidos => Set<Pedido>();
 
-    public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+    public DbSet<ItemPedido> ItensPedido => Set<ItemPedido>();
 
-    public DbSet<ProcessedMessage> ProcessedMessages => Set<ProcessedMessage>();
+    public DbSet<MensagemProcessada> MensagensProcessadas => Set<MensagemProcessada>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Order>(builder =>
+        modelBuilder.Entity<Pedido>(construtor =>
         {
-            builder.ToTable("orders");
-            builder.HasKey(order => order.Id);
+            construtor.ToTable("pedidos");
+            construtor.HasKey(pedido => pedido.Id);
 
-            builder.Property(order => order.Id).HasColumnName("id");
-            builder.Property(order => order.CustomerId).HasColumnName("customer_id").HasMaxLength(255).IsRequired();
-            builder.Property(order => order.TotalAmount).HasColumnName("total_amount").HasPrecision(19, 2).IsRequired();
-            builder.Property(order => order.Status).HasColumnName("status").HasConversion<short>().IsRequired();
-            builder.Property(order => order.CreatedAt).HasColumnName("created_at").IsRequired();
-            builder.Property(order => order.UpdatedAt).HasColumnName("updated_at").IsRequired();
-            builder.Property(order => order.ProcessingStartedAt).HasColumnName("processing_started_at");
-            builder.Property(order => order.CompletedAt).HasColumnName("completed_at");
-            builder.Property(order => order.ErrorMessage).HasColumnName("error_message");
-            builder.Property(order => order.ApprovalReason).HasColumnName("approval_reason");
-            builder.Property(order => order.RejectionReason).HasColumnName("rejection_reason");
+            construtor.Property(pedido => pedido.Id).HasColumnName("id");
+            construtor.Property(pedido => pedido.ClienteId).HasColumnName("cliente_id").HasMaxLength(255).IsRequired();
+            construtor.Property(pedido => pedido.ValorTotal).HasColumnName("valor_total").HasPrecision(19, 2).IsRequired();
+            construtor.Property(pedido => pedido.Status).HasColumnName("status").HasConversion<short>().IsRequired();
+            construtor.Property(pedido => pedido.CriadoEm).HasColumnName("criado_em").IsRequired();
+            construtor.Property(pedido => pedido.AtualizadoEm).HasColumnName("atualizado_em").IsRequired();
+            construtor.Property(pedido => pedido.ProcessamentoIniciadoEm).HasColumnName("processamento_iniciado_em");
+            construtor.Property(pedido => pedido.ConcluidoEm).HasColumnName("concluido_em");
+            construtor.Property(pedido => pedido.MensagemErro).HasColumnName("mensagem_erro");
+            construtor.Property(pedido => pedido.MotivoAprovacao).HasColumnName("motivo_aprovacao");
+            construtor.Property(pedido => pedido.MotivoRejeicao).HasColumnName("motivo_rejeicao");
 
-            builder.HasMany(order => order.Items)
-                .WithOne(item => item.Order)
-                .HasForeignKey(item => item.OrderId)
+            construtor.HasMany(pedido => pedido.Itens)
+                .WithOne(item => item.Pedido)
+                .HasForeignKey(item => item.PedidoId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            builder.HasIndex(order => order.CustomerId);
-            builder.HasIndex(order => order.Status);
-            builder.HasIndex(order => order.CreatedAt);
-            builder.HasIndex(order => new { order.Status, order.UpdatedAt });
+            construtor.HasIndex(pedido => pedido.ClienteId);
+            construtor.HasIndex(pedido => pedido.Status);
+            construtor.HasIndex(pedido => pedido.CriadoEm);
+            construtor.HasIndex(pedido => new { pedido.Status, pedido.AtualizadoEm });
         });
 
-        modelBuilder.Entity<Order>(builder =>
+        modelBuilder.Entity<Pedido>(construtor =>
         {
-            builder.Navigation(order => order.Items).HasField("_items");
-            builder.Navigation(order => order.Items).UsePropertyAccessMode(PropertyAccessMode.Field);
+            construtor.Navigation(pedido => pedido.Itens).HasField("_itens");
+            construtor.Navigation(pedido => pedido.Itens).UsePropertyAccessMode(PropertyAccessMode.Field);
         });
 
-        modelBuilder.Entity<OrderItem>(builder =>
+        modelBuilder.Entity<ItemPedido>(construtor =>
         {
-            builder.ToTable("order_items");
-            builder.HasKey(item => item.Id);
+            construtor.ToTable("itens_pedido");
+            construtor.HasKey(item => item.Id);
 
-            builder.Property(item => item.Id).HasColumnName("id");
-            builder.Property(item => item.OrderId).HasColumnName("order_id").IsRequired();
-            builder.Property(item => item.ProductId).HasColumnName("product_id").HasMaxLength(255).IsRequired();
-            builder.Property(item => item.Quantity).HasColumnName("quantity").IsRequired();
-            builder.Property(item => item.UnitPrice).HasColumnName("unit_price").HasPrecision(19, 2).IsRequired();
-            builder.Property(item => item.LineTotal).HasColumnName("line_total").HasPrecision(19, 2).IsRequired();
-            builder.Property(item => item.Description).HasColumnName("description").HasMaxLength(500);
+            construtor.Property(item => item.Id).HasColumnName("id");
+            construtor.Property(item => item.PedidoId).HasColumnName("pedido_id").IsRequired();
+            construtor.Property(item => item.ProdutoId).HasColumnName("produto_id").HasMaxLength(255).IsRequired();
+            construtor.Property(item => item.Quantidade).HasColumnName("quantidade").IsRequired();
+            construtor.Property(item => item.PrecoUnitario).HasColumnName("preco_unitario").HasPrecision(19, 2).IsRequired();
+            construtor.Property(item => item.ValorLinha).HasColumnName("valor_linha").HasPrecision(19, 2).IsRequired();
+            construtor.Property(item => item.Descricao).HasColumnName("descricao").HasMaxLength(500);
 
-            builder.HasIndex(item => item.OrderId);
-            builder.HasIndex(item => item.ProductId);
+            construtor.HasIndex(item => item.PedidoId);
+            construtor.HasIndex(item => item.ProdutoId);
         });
 
-        modelBuilder.Entity<ProcessedMessage>(builder =>
+        modelBuilder.Entity<MensagemProcessada>(construtor =>
         {
-            builder.ToTable("processed_messages");
-            builder.HasKey(message => message.MessageId);
+            construtor.ToTable("mensagens_processadas");
+            construtor.HasKey(mensagem => mensagem.MensagemId);
 
-            builder.Property(message => message.MessageId).HasColumnName("message_id").HasMaxLength(255);
-            builder.Property(message => message.OrderId).HasColumnName("order_id");
-            builder.Property(message => message.ProcessedAt).HasColumnName("processed_at").IsRequired();
-            builder.Property(message => message.MessageType).HasColumnName("message_type").HasMaxLength(100).IsRequired();
-            builder.Property(message => message.Status).HasColumnName("status").HasMaxLength(20).IsRequired();
-            builder.Property(message => message.ErrorDetails).HasColumnName("error_details");
+            construtor.Property(mensagem => mensagem.MensagemId).HasColumnName("mensagem_id").HasMaxLength(255);
+            construtor.Property(mensagem => mensagem.PedidoId).HasColumnName("pedido_id");
+            construtor.Property(mensagem => mensagem.ProcessadaEm).HasColumnName("processada_em").IsRequired();
+            construtor.Property(mensagem => mensagem.TipoMensagem).HasColumnName("tipo_mensagem").HasMaxLength(100).IsRequired();
+            construtor.Property(mensagem => mensagem.Status).HasColumnName("status").HasMaxLength(20).IsRequired();
+            construtor.Property(mensagem => mensagem.DetalhesErro).HasColumnName("detalhes_erro");
 
-            builder.HasOne(message => message.Order)
+            construtor.HasOne(mensagem => mensagem.Pedido)
                 .WithMany()
-                .HasForeignKey(message => message.OrderId)
+                .HasForeignKey(mensagem => mensagem.PedidoId)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            builder.HasIndex(message => new { message.OrderId, message.ProcessedAt });
-            builder.HasIndex(message => new { message.MessageType, message.ProcessedAt });
+            construtor.HasIndex(mensagem => new { mensagem.PedidoId, mensagem.ProcessadaEm });
+            construtor.HasIndex(mensagem => new { mensagem.TipoMensagem, mensagem.ProcessadaEm });
         });
     }
 }
