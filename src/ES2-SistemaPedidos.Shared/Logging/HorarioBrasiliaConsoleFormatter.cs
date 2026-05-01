@@ -21,10 +21,7 @@ public sealed class HorarioBrasiliaConsoleFormatter : ITextFormatter
         logEvent.RenderMessage(output, CultureInfo.InvariantCulture);
         output.WriteLine();
 
-        if (logEvent.Exception is not null)
-        {
-            output.WriteLine(logEvent.Exception);
-        }
+        if (logEvent.Exception is not null) output.WriteLine(logEvent.Exception);
     }
 
     private static string AbreviarNivel(LogEventLevel nivel)

@@ -59,16 +59,16 @@ static AmazonSQSClient CriarClienteSqs(IConfiguration configuracao)
 static string GetNomeRegiao(IConfiguration configuracao)
 {
     return configuracao["AWS_REGIAO"]
-        ?? configuracao["AWS_REGION"]
-        ?? configuracao["AWS:Regiao"]
-        ?? configuracao["AWS:Region"]
-        ?? "us-east-1";
+           ?? configuracao["AWS_REGION"]
+           ?? configuracao["AWS:Regiao"]
+           ?? configuracao["AWS:Region"]
+           ?? "us-east-1";
 }
 
 static string? GetUrlServicoAws(IConfiguration configuracao)
 {
     return configuracao["AWS_URL_SERVICO"]
-        ?? configuracao["AWS_ENDPOINT_URL"]
-        ?? configuracao["AWS:UrlServico"]
-        ?? configuracao["AWS:ServiceUrl"];
+           ?? configuracao["AWS_ENDPOINT_URL"]
+           ?? configuracao["AWS:UrlServico"]
+           ?? configuracao["AWS:ServiceUrl"];
 }

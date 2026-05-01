@@ -13,7 +13,8 @@ public sealed class ProcessadorPedido(
 {
     private static readonly JsonSerializerOptions OpcoesJson = new(JsonSerializerDefaults.Web);
 
-    public async Task<bool> ProcessMessageAsync(string mensagemSqsId, string corpoMensagem, CancellationToken tokenCancelamento)
+    public async Task<bool> ProcessMessageAsync(string mensagemSqsId, string corpoMensagem,
+        CancellationToken tokenCancelamento)
     {
         var evento = JsonSerializer.Deserialize<EventoSolicitacaoCliente>(corpoMensagem, OpcoesJson);
         if (evento is null || evento.ClienteId <= 0 || evento.RequisicaoId == Guid.Empty)

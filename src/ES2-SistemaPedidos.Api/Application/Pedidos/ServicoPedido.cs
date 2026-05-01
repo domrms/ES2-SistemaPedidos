@@ -14,20 +14,16 @@ public sealed class ServicoPedido(
         CancellationToken tokenCancelamento)
     {
         if (requisicao.ClienteId <= 0)
-        {
             return Resultado<RespostaCriarSolicitacao>.ValidationFailed(new RespostaErroValidacao(
                 "ValidacaoFalhou",
                 "A validacao da solicitacao falhou",
                 [new ErroValidacao("clienteId", "O clienteId deve ser maior que zero.")]));
-        }
 
         if (!await clienteRepositorio.ExisteClienteAsync(requisicao.ClienteId, tokenCancelamento))
-        {
             return Resultado<RespostaCriarSolicitacao>.ValidationFailed(new RespostaErroValidacao(
                 "ValidacaoFalhou",
                 "A validacao da solicitacao falhou",
                 [new ErroValidacao("clienteId", $"Cliente {requisicao.ClienteId} nao encontrado.")]));
-        }
 
         var evento = new EventoSolicitacaoCliente(
             requisicao.ClienteId,

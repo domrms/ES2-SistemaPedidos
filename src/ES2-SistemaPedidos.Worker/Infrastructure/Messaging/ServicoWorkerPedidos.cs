@@ -20,7 +20,6 @@ public sealed class ServicoWorkerPedidos(
         registrador.LogInformation("Worker de pedidos iniciado. Fila: {FilaUrl}", opcoes.FilaUrl);
 
         while (!stoppingToken.IsCancellationRequested)
-        {
             try
             {
                 var resposta = await sqs.ReceiveMessageAsync(new ReceiveMessageRequest
@@ -31,10 +30,7 @@ public sealed class ServicoWorkerPedidos(
                     VisibilityTimeout = opcoes.TempoVisibilidadeSegundos
                 }, stoppingToken);
 
-                foreach (var mensagem in resposta.Messages)
-                {
-                    await ProcessMessageAsync(mensagem, stoppingToken);
-                }
+                foreach (var mensagem in resposta.Messages) await ProcessMessageAsync(mensagem, stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -45,7 +41,6 @@ public sealed class ServicoWorkerPedidos(
                 registrador.LogError(excecao, "Falha no ciclo de leitura da fila SQS");
                 await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
             }
-        }
     }
 
     private async Task ProcessMessageAsync(Message mensagem, CancellationToken tokenCancelamento)
@@ -55,10 +50,12 @@ public sealed class ServicoWorkerPedidos(
 
         try
         {
-            var processada = await processador.ProcessMessageAsync(mensagem.MessageId, mensagem.Body, tokenCancelamento);
+            var processada =
+                await processador.ProcessMessageAsync(mensagem.MessageId, mensagem.Body, tokenCancelamento);
             if (!processada)
             {
-                registrador.LogWarning("Mensagem {MensagemId} nao foi processada e permanecera na fila", mensagem.MessageId);
+                registrador.LogWarning("Mensagem {MensagemId} nao foi processada e permanecera na fila",
+                    mensagem.MessageId);
                 return;
             }
 
@@ -67,7 +64,8 @@ public sealed class ServicoWorkerPedidos(
         }
         catch (Exception excecao)
         {
-            registrador.LogError(excecao, "Erro ao processar mensagem {MensagemId}; a mensagem nao sera removida", mensagem.MessageId);
+            registrador.LogError(excecao, "Erro ao processar mensagem {MensagemId}; a mensagem nao sera removida",
+                mensagem.MessageId);
         }
     }
 }

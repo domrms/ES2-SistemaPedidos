@@ -38,7 +38,7 @@ public sealed class PedidosController(ServicoPedido servicoPedido) : ControllerB
                    or DbException
                    or AmazonServiceException
                    or HttpRequestException
-               || excecao is InvalidOperationException invalidOperationException
-               && invalidOperationException.Message.Contains("SQS", StringComparison.OrdinalIgnoreCase);
+               || (excecao is InvalidOperationException invalidOperationException
+                   && invalidOperationException.Message.Contains("SQS", StringComparison.OrdinalIgnoreCase));
     }
 }
