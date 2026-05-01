@@ -1,1 +1,0 @@
-uv tool run --from specify-cli specify init --here
