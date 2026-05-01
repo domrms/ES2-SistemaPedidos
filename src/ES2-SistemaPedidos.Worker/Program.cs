@@ -1,6 +1,7 @@
 using Amazon;
 using Amazon.Runtime;
 using Amazon.SQS;
+using ES2_SistemaPedidos.Shared.Logging;
 using ES2_SistemaPedidos.Worker;
 using ES2_SistemaPedidos.Worker.Application.Abstractions;
 using ES2_SistemaPedidos.Worker.Application.Services;
@@ -13,7 +14,7 @@ using Serilog;
 
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
-    .WriteTo.Console()
+    .WriteTo.Console(new HorarioBrasiliaConsoleFormatter())
     .CreateLogger();
 
 var host = Host.CreateDefaultBuilder(args)
@@ -21,7 +22,7 @@ var host = Host.CreateDefaultBuilder(args)
     {
         configuracaoLog
             .Enrich.FromLogContext()
-            .WriteTo.Console();
+            .WriteTo.Console(new HorarioBrasiliaConsoleFormatter());
     })
     .ConfigureServices((contexto, servicos) =>
     {

@@ -6,11 +6,12 @@ using ES2_SistemaPedidos.Api.Application.Abstractions;
 using ES2_SistemaPedidos.Api.Application.Pedidos;
 using ES2_SistemaPedidos.Api.Infrastructure.Messaging;
 using ES2_SistemaPedidos.Shared;
+using ES2_SistemaPedidos.Shared.Logging;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
-    .WriteTo.Console()
+    .WriteTo.Console(new HorarioBrasiliaConsoleFormatter())
     .CreateLogger();
 
 var construtorAplicacao = WebApplication.CreateBuilder(args);
@@ -19,7 +20,7 @@ construtorAplicacao.Host.UseSerilog((contexto, servicos, configuracaoLog) =>
 {
     configuracaoLog
         .Enrich.FromLogContext()
-        .WriteTo.Console();
+        .WriteTo.Console(new HorarioBrasiliaConsoleFormatter());
 });
 
 construtorAplicacao.Services

@@ -11,7 +11,8 @@ namespace ES2_SistemaPedidos.Api.Controllers;
 public sealed class PedidosController(ServicoPedido servicoPedido) : ControllerBase
 {
     [HttpPost]
-    public async Task<IActionResult> CriarSolicitacaoAsync(RequisicaoCriarSolicitacao requisicao, CancellationToken tokenCancelamento)
+    public async Task<IActionResult> CriarSolicitacaoAsync(RequisicaoCriarSolicitacao requisicao,
+        CancellationToken tokenCancelamento)
     {
         Resultado<RespostaCriarSolicitacao> resultado;
         try
@@ -22,7 +23,8 @@ public sealed class PedidosController(ServicoPedido servicoPedido) : ControllerB
         {
             return StatusCode(
                 StatusCodes.Status503ServiceUnavailable,
-                new RespostaErro("ServicoIndisponivel", "Banco de dados ou mensageria temporariamente indisponivel", new { tentarNovamenteApos = 30 }));
+                new RespostaErro("ServicoIndisponivel", "Banco de dados ou mensageria temporariamente indisponivel",
+                    new { tentarNovamenteApos = 30 }));
         }
 
         return resultado.Match<IActionResult>(
@@ -33,10 +35,10 @@ public sealed class PedidosController(ServicoPedido servicoPedido) : ControllerB
     private static bool IsFalhaDependencia(Exception excecao)
     {
         return excecao is DbUpdateException
-            or DbException
-            or AmazonServiceException
-            or HttpRequestException
-            || excecao is InvalidOperationException invalidOperationException
-            && invalidOperationException.Message.Contains("SQS", StringComparison.OrdinalIgnoreCase);
+                   or DbException
+                   or AmazonServiceException
+                   or HttpRequestException
+               || excecao is InvalidOperationException invalidOperationException
+               && invalidOperationException.Message.Contains("SQS", StringComparison.OrdinalIgnoreCase);
     }
 }
