@@ -1,4 +1,6 @@
 using ES2_SistemaPedidos.Shared.Data;
+using ES2_SistemaPedidos.Shared.Data.Repositorios;
+using ES2_SistemaPedidos.Shared.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,6 +16,8 @@ public static class DependencyInjection
             ?? "Host=localhost;Port=5432;Database=es2_pedidos;Username=dev;Password=dev";
 
         servicos.AddDbContext<ApplicationDbContext>(opcoes => opcoes.UseNpgsql(stringConexao));
+        servicos.AddScoped<IPedidoRepositorio, PedidoRepositorio>();
+        servicos.AddScoped<IUnidadeTrabalho, UnidadeTrabalho>();
 
         return servicos;
     }

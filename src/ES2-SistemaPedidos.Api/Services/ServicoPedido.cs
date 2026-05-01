@@ -1,12 +1,12 @@
 using ES2_SistemaPedidos.Shared.Contracts;
-using ES2_SistemaPedidos.Shared.Data;
 using ES2_SistemaPedidos.Shared.Domain;
-using Microsoft.EntityFrameworkCore;
+using ES2_SistemaPedidos.Shared.Domain.Repositories;
 
 namespace ES2_SistemaPedidos.Api.Services;
 
 public sealed class ServicoPedido(
-    ApplicationDbContext contextoBanco,
+    IPedidoRepositorio pedidoRepositorio,
+    IUnidadeTrabalho unidadeTrabalho,
     IPublicadorEventoPedido publicadorEvento,
     TimeProvider provedorTempo,
     IConfiguration configuracao)
@@ -40,8 +40,8 @@ public sealed class ServicoPedido(
                 string.IsNullOrWhiteSpace(item.Descricao) ? null : item.Descricao.Trim());
         }
 
-        contextoBanco.Pedidos.Add(pedido);
-        await contextoBanco.SaveChangesAsync(tokenCancelamento);
+        await pedidoRepositorio.AddPedidoAsync(pedido, tokenCancelamento);
+        await unidadeTrabalho.SaveChangesAsync(tokenCancelamento);
 
         var eventoPedidoCriado = ToEventoPedidoCriado(pedido, correlacaoId, agora);
         await publicadorEvento.PublishPedidoCriadoAsync(eventoPedidoCriado, tokenCancelamento);
@@ -58,10 +58,7 @@ public sealed class ServicoPedido(
 
     public async Task<RespostaDetalhesPedido?> GetPedidoPorIdAsync(Guid pedidoId, CancellationToken tokenCancelamento)
     {
-        var pedido = await contextoBanco.Pedidos
-            .AsNoTracking()
-            .Include(entidade => entidade.Itens)
-            .FirstOrDefaultAsync(entidade => entidade.Id == pedidoId, tokenCancelamento);
+        var pedido = await pedidoRepositorio.GetPedidoPorIdAsync(pedidoId, tokenCancelamento);
 
         return pedido is null ? null : ToRespostaDetalhes(pedido);
     }
@@ -81,47 +78,23 @@ public sealed class ServicoPedido(
             return Resultado<RespostaListarPedidos>.ValidationFailed(ToRespostaValidacao(errosValidacao));
         }
 
-        var consulta = contextoBanco.Pedidos
-            .AsNoTracking()
-            .Include(pedido => pedido.Itens)
-            .Where(pedido => pedido.ClienteId == clienteId.Trim());
-
-        if (status.HasValue)
-        {
-            consulta = consulta.Where(pedido => pedido.Status == status.Value);
-        }
-
-        if (dataDe.HasValue)
-        {
-            var inicio = new DateTimeOffset(dataDe.Value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc));
-            consulta = consulta.Where(pedido => pedido.CriadoEm >= inicio);
-        }
-
-        if (dataAte.HasValue)
-        {
-            var fim = new DateTimeOffset(dataAte.Value.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc));
-            consulta = consulta.Where(pedido => pedido.CriadoEm <= fim);
-        }
-
-        var total = await consulta.CountAsync(tokenCancelamento);
-        var pedidos = await consulta
-            .OrderByDescending(pedido => pedido.CriadoEm)
-            .Skip(pular)
-            .Take(quantidade)
+        var total = await pedidoRepositorio.CountPedidosAsync(clienteId, status, dataDe, dataAte, tokenCancelamento);
+        var pedidos = await pedidoRepositorio.ListPedidosAsync(clienteId, status, pular, quantidade, dataDe, dataAte, tokenCancelamento);
+        var respostasPedido = pedidos
             .Select(pedido => new RespostaResumoPedido(
-                pedido.Id,
-                pedido.ClienteId,
-                pedido.Status,
-                pedido.ValorTotal,
-                pedido.Itens.Count,
-                pedido.CriadoEm,
-                pedido.AtualizadoEm,
-                pedido.ConcluidoEm))
-            .ToListAsync(tokenCancelamento);
+            pedido.Id,
+            pedido.ClienteId,
+            pedido.Status,
+            pedido.ValorTotal,
+            pedido.Itens.Count,
+            pedido.CriadoEm,
+            pedido.AtualizadoEm,
+            pedido.ConcluidoEm))
+            .ToList();
 
         return Resultado<RespostaListarPedidos>.Success(new RespostaListarPedidos(
-            pedidos,
-            new RespostaPaginacao(pular, quantidade, total, pular + pedidos.Count < total, (int)Math.Ceiling(total / (double)quantidade))));
+            respostasPedido,
+            new RespostaPaginacao(pular, quantidade, total, pular + respostasPedido.Count < total, (int)Math.Ceiling(total / (double)quantidade))));
     }
 
     private List<ErroValidacao> ValidateCriacaoPedido(RequisicaoCriarPedido requisicao)

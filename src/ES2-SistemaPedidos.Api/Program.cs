@@ -10,14 +10,29 @@ using ES2_SistemaPedidos.Shared.Domain;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
+
+Log.Logger = new LoggerConfiguration()
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .CreateLogger();
 
 var construtorAplicacao = WebApplication.CreateBuilder(args);
+
+construtorAplicacao.Host.UseSerilog((contexto, servicos, configuracaoLog) =>
+{
+    configuracaoLog
+        .Enrich.FromLogContext()
+        .WriteTo.Console();
+});
 
 construtorAplicacao.Services.Configure<JsonOptions>(opcoes =>
 {
     opcoes.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
 
+construtorAplicacao.Services.AddEndpointsApiExplorer();
+construtorAplicacao.Services.AddSwaggerGen();
 construtorAplicacao.Services.AddPersistenciaPedidos(construtorAplicacao.Configuration);
 construtorAplicacao.Services.AddScoped<ServicoPedido>();
 construtorAplicacao.Services.AddSingleton(TimeProvider.System);
@@ -57,6 +72,8 @@ construtorAplicacao.Services.AddAuthorization();
 
 var aplicacao = construtorAplicacao.Build();
 
+aplicacao.UseSwagger();
+aplicacao.UseSwaggerUI();
 aplicacao.UseAuthentication();
 aplicacao.UseAuthorization();
 
