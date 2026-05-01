@@ -14,7 +14,7 @@ A solução terá:
 * Docker Compose
 * Testes automatizados
 
----
+--- 
 
 ## Objetivo do Sistema
 
