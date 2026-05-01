@@ -1,0 +1,15 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D827888F-7FAC-48B0-BFB3-376B45597BD0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D827888F-7FAC-48B0-BFB3-376B45597BD0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D827888F-7FAC-48B0-BFB3-376B45597BD0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D827888F-7FAC-48B0-BFB3-376B45597BD0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
