@@ -1,50 +1,50 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report:
+Version change: 0.0.0 -> 0.1.0 (MINOR: New principles added)
+Modified principles:
+- [PRINCIPLE_1_NAME] -> I. Code Quality
+- [PRINCIPLE_2_NAME] -> II. Testing Standards
+- [PRINCIPLE_3_NAME] -> III. User Experience Consistency
+- [PRINCIPLE_4_NAME] -> IV. Performance Requirements
+- [PRINCIPLE_5_NAME] -> V. Simplicity and Maintainability
+Added sections: None
+Removed sections: None
+Templates requiring updates:
+- C:/Users/Domingos/source/repos/ES2-Demo-E2E/.specify/templates/plan-template.md ⚠ pending
+- C:/Users/Domingos/source/repos/ES2-Demo-E2E/.specify/templates/spec-template.md ⚠ pending
+- C:/Users/Domingos/source/repos/ES2-Demo-E2E/.specify/templates/tasks-template.md ⚠ pending
+- C:/Users/Domingos/source/repos/ES2-Demo-E2E/.specify/templates/commands/*.md ⚠ pending
+Follow-up TODOs:
+- TODO(RATIFICATION_DATE): Original adoption date for the constitution.
+-->
+# ES2-SistemaPedidos Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Code Quality
+All code MUST adhere to established coding standards, style guides, and best practices. Code MUST be readable, maintainable, and self-documenting where possible. Static analysis tools MUST be integrated into the CI/CD pipeline to enforce quality gates.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Testing Standards
+A comprehensive testing strategy MUST be implemented, including unit, integration, and end-to-end tests. All critical paths MUST have adequate test coverage. Tests MUST be automated, reliable, and fast-executing. Test failures MUST block deployments.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. User Experience Consistency
+All user-facing components MUST adhere to defined UI/UX guidelines and design systems. Interactions MUST be intuitive, consistent, and accessible. User feedback MUST be actively sought and incorporated into design iterations.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Performance Requirements
+Applications MUST meet defined performance benchmarks for response times, throughput, and resource utilization. Performance testing MUST be a standard part of the release cycle. Critical performance bottlenecks MUST be identified and resolved proactively.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### V. Simplicity and Maintainability
+Solutions MUST prioritize simplicity in design and implementation. Avoid unnecessary complexity and over-engineering. Codebases MUST be easy to understand, modify, and extend. Refactoring efforts MUST be undertaken to reduce technical debt.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+## Additional Constraints
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+Technology stack requirements, compliance standards, deployment policies, etc.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+## Development Workflow
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+Code review requirements, testing gates, deployment approval process, etc.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
+This constitution supersedes all other practices. Amendments require documentation, approval, and a migration plan. All pull requests and code reviews MUST verify compliance with these principles. Complexity must be justified.
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
-
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 0.1.0 | **Ratified**: TODO(RATIFICATION_DATE) | **Last Amended**: 2026-05-01
