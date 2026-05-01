@@ -1,8 +1,9 @@
+using ES2_SistemaPedidos.Api.Application.Abstractions;
 using ES2_SistemaPedidos.Shared.Contracts;
 using ES2_SistemaPedidos.Shared.Domain;
 using ES2_SistemaPedidos.Shared.Domain.Repositories;
 
-namespace ES2_SistemaPedidos.Api.Services;
+namespace ES2_SistemaPedidos.Api.Application.Pedidos;
 
 public sealed class ServicoPedido(
     IPedidoRepositorio pedidoRepositorio,
@@ -82,14 +83,14 @@ public sealed class ServicoPedido(
         var pedidos = await pedidoRepositorio.ListPedidosAsync(clienteId, status, pular, quantidade, dataDe, dataAte, tokenCancelamento);
         var respostasPedido = pedidos
             .Select(pedido => new RespostaResumoPedido(
-            pedido.Id,
-            pedido.ClienteId,
-            pedido.Status,
-            pedido.ValorTotal,
-            pedido.Itens.Count,
-            pedido.CriadoEm,
-            pedido.AtualizadoEm,
-            pedido.ConcluidoEm))
+                pedido.Id,
+                pedido.ClienteId,
+                pedido.Status,
+                pedido.ValorTotal,
+                pedido.Itens.Count,
+                pedido.CriadoEm,
+                pedido.AtualizadoEm,
+                pedido.ConcluidoEm))
             .ToList();
 
         return Resultado<RespostaListarPedidos>.Success(new RespostaListarPedidos(

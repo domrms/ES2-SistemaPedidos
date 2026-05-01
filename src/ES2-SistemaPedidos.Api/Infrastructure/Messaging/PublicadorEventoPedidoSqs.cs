@@ -1,9 +1,10 @@
 using System.Text.Json;
 using Amazon.SQS;
 using Amazon.SQS.Model;
+using ES2_SistemaPedidos.Api.Application.Abstractions;
 using ES2_SistemaPedidos.Shared.Contracts;
 
-namespace ES2_SistemaPedidos.Api.Services;
+namespace ES2_SistemaPedidos.Api.Infrastructure.Messaging;
 
 public sealed class PublicadorEventoPedidoSqs(
     IAmazonSQS sqs,

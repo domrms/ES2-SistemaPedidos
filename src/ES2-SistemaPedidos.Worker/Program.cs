@@ -1,9 +1,11 @@
 using Amazon;
 using Amazon.Runtime;
 using Amazon.SQS;
-using ES2_SistemaPedidos.Shared;
 using ES2_SistemaPedidos.Worker;
-using ES2_SistemaPedidos.Worker.Services;
+using ES2_SistemaPedidos.Worker.Application.Abstractions;
+using ES2_SistemaPedidos.Worker.Application.Services;
+using ES2_SistemaPedidos.Worker.Infrastructure.Data;
+using ES2_SistemaPedidos.Worker.Infrastructure.Messaging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -24,9 +26,9 @@ var host = Host.CreateDefaultBuilder(args)
     .ConfigureServices((contexto, servicos) =>
     {
         servicos.AddOrderProcessingOptions(contexto.Configuration);
-        servicos.AddPersistenciaPedidos(contexto.Configuration);
         servicos.AddSingleton(TimeProvider.System);
         servicos.AddSingleton<IAmazonSQS>(_ => CriarClienteSqs(contexto.Configuration));
+        servicos.AddScoped<IPedidoProcessamentoRepositorio, PedidoProcessamentoRepositorioDapper>();
         servicos.AddScoped<ProcessadorPedido>();
         servicos.AddHostedService<ServicoWorkerPedidos>();
     })

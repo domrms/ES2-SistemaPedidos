@@ -1,11 +1,12 @@
 using Amazon.SQS;
 using Amazon.SQS.Model;
+using ES2_SistemaPedidos.Worker.Application.Services;
 using ES2_SistemaPedidos.Worker.Configuracoes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace ES2_SistemaPedidos.Worker.Services;
+namespace ES2_SistemaPedidos.Worker.Infrastructure.Messaging;
 
 public sealed class ServicoWorkerPedidos(
     IAmazonSQS sqs,

@@ -2,14 +2,12 @@ using System.Text.Json.Serialization;
 using Amazon;
 using Amazon.Runtime;
 using Amazon.SQS;
-using ES2_SistemaPedidos.Api;
+using ES2_SistemaPedidos.Api.Application.Abstractions;
+using ES2_SistemaPedidos.Api.Application.Pedidos;
+using ES2_SistemaPedidos.Api.Infrastructure.Messaging;
 using ES2_SistemaPedidos.Api.Security;
-using ES2_SistemaPedidos.Api.Services;
 using ES2_SistemaPedidos.Shared;
-using ES2_SistemaPedidos.Shared.Domain;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Http.Json;
-using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -26,9 +24,11 @@ construtorAplicacao.Host.UseSerilog((contexto, servicos, configuracaoLog) =>
         .WriteTo.Console();
 });
 
-construtorAplicacao.Services.Configure<JsonOptions>(opcoes =>
+construtorAplicacao.Services
+    .AddControllers()
+    .AddJsonOptions(opcoes =>
 {
-    opcoes.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    opcoes.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
 
 construtorAplicacao.Services.AddEndpointsApiExplorer();
@@ -76,71 +76,8 @@ aplicacao.UseSwagger();
 aplicacao.UseSwaggerUI();
 aplicacao.UseAuthentication();
 aplicacao.UseAuthorization();
-
-aplicacao.MapGet("/api/saude", () => Results.Ok(new
-{
-    estado = "saudavel",
-    dataHora = DateTimeOffset.UtcNow,
-    versao = "1.0.0"
-}));
-
-var pedidos = aplicacao.MapGroup("/api/pedidos")
-    .RequireAuthorization();
-
-pedidos.MapPost("/", async (RequisicaoCriarPedido requisicao, ServicoPedido servicoPedido, HttpContext contextoHttp, CancellationToken tokenCancelamento) =>
-{
-    Resultado<RespostaCriarPedido> resultado;
-    try
-    {
-        resultado = await servicoPedido.CreatePedidoAsync(requisicao, contextoHttp.TraceIdentifier, tokenCancelamento);
-    }
-    catch (Exception excecao) when (IsFalhaDependencia(excecao))
-    {
-        return Results.Json(
-            new RespostaErro("ServicoIndisponivel", "Banco de dados ou mensageria temporariamente indisponivel", new { tentarNovamenteApos = 30 }),
-            statusCode: StatusCodes.Status503ServiceUnavailable);
-    }
-
-    return resultado.Match<IResult>(
-        sucesso => Results.Created($"/api/pedidos/{sucesso.PedidoId}", sucesso),
-        validacao => Results.BadRequest(validacao));
-});
-
-pedidos.MapGet("/{pedidoId:guid}", async (Guid pedidoId, ServicoPedido servicoPedido, CancellationToken tokenCancelamento) =>
-{
-    var pedido = await servicoPedido.GetPedidoPorIdAsync(pedidoId, tokenCancelamento);
-
-    return pedido is null
-        ? Results.NotFound(new RespostaErro("PedidoNaoEncontrado", $"Pedido com ID {pedidoId} nao encontrado"))
-        : Results.Ok(pedido);
-});
-
-pedidos.MapGet("/", async (
-    string clienteId,
-    StatusPedido? status,
-    int? pular,
-    int? quantidade,
-    DateOnly? dataDe,
-    DateOnly? dataAte,
-    ServicoPedido servicoPedido,
-    CancellationToken tokenCancelamento) =>
-{
-    var resultado = await servicoPedido.ListPedidosAsync(clienteId, status, pular ?? 0, quantidade ?? 20, dataDe, dataAte, tokenCancelamento);
-
-    return resultado.Match<IResult>(
-        sucesso => Results.Ok(sucesso),
-        validacao => Results.BadRequest(validacao));
-});
+aplicacao.MapControllers();
 
 aplicacao.Run();
-
-static bool IsFalhaDependencia(Exception excecao)
-{
-    return excecao is DbUpdateException
-        or AmazonServiceException
-        or HttpRequestException
-        || excecao is InvalidOperationException invalidOperationException
-        && invalidOperationException.Message.Contains("SQS", StringComparison.OrdinalIgnoreCase);
-}
 
 public partial class Program;
