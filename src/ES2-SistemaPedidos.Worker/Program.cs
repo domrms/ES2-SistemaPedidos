@@ -1,6 +1,5 @@
 using Amazon;
 using Amazon.Runtime;
-using Amazon.SimpleNotificationService;
 using Amazon.SQS;
 using ES2_SistemaPedidos.Shared;
 using ES2_SistemaPedidos.Worker;
@@ -28,7 +27,6 @@ var host = Host.CreateDefaultBuilder(args)
         servicos.AddPersistenciaPedidos(contexto.Configuration);
         servicos.AddSingleton(TimeProvider.System);
         servicos.AddSingleton<IAmazonSQS>(_ => CriarClienteSqs(contexto.Configuration));
-        servicos.AddSingleton<IAmazonSimpleNotificationService>(_ => CriarClienteSns(contexto.Configuration));
         servicos.AddScoped<ProcessadorPedido>();
         servicos.AddHostedService<ServicoWorkerPedidos>();
     })
@@ -53,25 +51,6 @@ static AmazonSQSClient CriarClienteSqs(IConfiguration configuracao)
     }
 
     return new AmazonSQSClient(configuracaoSqs);
-}
-
-static AmazonSimpleNotificationServiceClient CriarClienteSns(IConfiguration configuracao)
-{
-    var nomeRegiao = GetNomeRegiao(configuracao);
-    var configuracaoSns = new AmazonSimpleNotificationServiceConfig
-    {
-        RegionEndpoint = RegionEndpoint.GetBySystemName(nomeRegiao)
-    };
-
-    var urlServico = GetUrlServicoAws(configuracao);
-    if (!string.IsNullOrWhiteSpace(urlServico))
-    {
-        configuracaoSns.ServiceURL = urlServico;
-        configuracaoSns.AuthenticationRegion = nomeRegiao;
-        return new AmazonSimpleNotificationServiceClient(new BasicAWSCredentials("test", "test"), configuracaoSns);
-    }
-
-    return new AmazonSimpleNotificationServiceClient(configuracaoSns);
 }
 
 static string GetNomeRegiao(IConfiguration configuracao)

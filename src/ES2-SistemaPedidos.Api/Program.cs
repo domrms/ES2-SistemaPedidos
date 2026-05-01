@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
 using Amazon;
 using Amazon.Runtime;
-using Amazon.SimpleNotificationService;
+using Amazon.SQS;
 using ES2_SistemaPedidos.Api;
 using ES2_SistemaPedidos.Api.Security;
 using ES2_SistemaPedidos.Api.Services;
@@ -36,15 +36,15 @@ construtorAplicacao.Services.AddSwaggerGen();
 construtorAplicacao.Services.AddPersistenciaPedidos(construtorAplicacao.Configuration);
 construtorAplicacao.Services.AddScoped<ServicoPedido>();
 construtorAplicacao.Services.AddSingleton(TimeProvider.System);
-construtorAplicacao.Services.AddSingleton<IPublicadorEventoPedido, PublicadorEventoPedidoSns>();
-construtorAplicacao.Services.AddSingleton<IAmazonSimpleNotificationService>(_ =>
+construtorAplicacao.Services.AddSingleton<IPublicadorEventoPedido, PublicadorEventoPedidoSqs>();
+construtorAplicacao.Services.AddSingleton<IAmazonSQS>(_ =>
 {
     var nomeRegiao = construtorAplicacao.Configuration["AWS_REGIAO"]
         ?? construtorAplicacao.Configuration["AWS_REGION"]
         ?? construtorAplicacao.Configuration["AWS:Regiao"]
         ?? construtorAplicacao.Configuration["AWS:Region"]
         ?? "us-east-1";
-    var configuracaoSns = new AmazonSimpleNotificationServiceConfig
+    var configuracaoSqs = new AmazonSQSConfig
     {
         RegionEndpoint = RegionEndpoint.GetBySystemName(nomeRegiao)
     };
@@ -55,12 +55,12 @@ construtorAplicacao.Services.AddSingleton<IAmazonSimpleNotificationService>(_ =>
         ?? construtorAplicacao.Configuration["AWS:ServiceUrl"];
     if (!string.IsNullOrWhiteSpace(urlServico))
     {
-        configuracaoSns.ServiceURL = urlServico;
-        configuracaoSns.AuthenticationRegion = nomeRegiao;
-        return new AmazonSimpleNotificationServiceClient(new BasicAWSCredentials("test", "test"), configuracaoSns);
+        configuracaoSqs.ServiceURL = urlServico;
+        configuracaoSqs.AuthenticationRegion = nomeRegiao;
+        return new AmazonSQSClient(new BasicAWSCredentials("test", "test"), configuracaoSqs);
     }
 
-    return new AmazonSimpleNotificationServiceClient(configuracaoSns);
+    return new AmazonSQSClient(configuracaoSqs);
 });
 
 construtorAplicacao.Services
@@ -140,7 +140,7 @@ static bool IsFalhaDependencia(Exception excecao)
         or AmazonServiceException
         or HttpRequestException
         || excecao is InvalidOperationException invalidOperationException
-        && invalidOperationException.Message.Contains("SNS", StringComparison.OrdinalIgnoreCase);
+        && invalidOperationException.Message.Contains("SQS", StringComparison.OrdinalIgnoreCase);
 }
 
 public partial class Program;

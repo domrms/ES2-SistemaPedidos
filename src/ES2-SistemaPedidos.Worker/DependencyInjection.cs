@@ -15,11 +15,6 @@ public static class DependencyInjection
                 ?? configuracao["AWS:FilaPedidosUrl"]
                 ?? configuracao["AWS:SqsQueueUrl"]
                 ?? "http://localhost:4566/000000000000/processamento-pedidos",
-            TopicoSnsArn = configuracao["SNS_TOPICO_ARN"]
-                ?? configuracao["SNS_TOPIC_ARN"]
-                ?? configuracao["AWS:TopicoSnsArn"]
-                ?? configuracao["AWS:SnsTopicArn"]
-                ?? "arn:aws:sns:us-east-1:000000000000:EventosPedido",
             ValorLimiteAprovacao = decimal.TryParse(configuracao["VALOR_LIMITE_APROVACAO"] ?? configuracao["OrderProcessing:ApprovalThresholdAmount"], out var valorLimite)
                 ? valorLimite
                 : 1000m

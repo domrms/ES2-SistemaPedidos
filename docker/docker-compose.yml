@@ -49,16 +49,10 @@ services:
       AWS_ENDPOINT_URL: http://floci:4566
     command:
       - |
-        until aws sns list-topics --endpoint-url $$AWS_ENDPOINT_URL >/dev/null 2>&1; do
+        until aws sqs list-queues --endpoint-url $$AWS_ENDPOINT_URL >/dev/null 2>&1; do
           echo 'Aguardando Floci em http://floci:4566...';
           sleep 2;
         done;
-
-        TOPICO_ARN=$$(aws sns create-topic
-          --name EventosPedido
-          --query TopicArn
-          --output text
-          --endpoint-url $$AWS_ENDPOINT_URL);
 
         FILA_URL=$$(aws sqs create-queue
           --queue-name processamento-pedidos
@@ -69,13 +63,6 @@ services:
         DLQ_URL=$$(aws sqs create-queue
           --queue-name processamento-pedidos-dlq
           --query QueueUrl
-          --output text
-          --endpoint-url $$AWS_ENDPOINT_URL);
-
-        FILA_ARN=$$(aws sqs get-queue-attributes
-          --queue-url $$FILA_URL
-          --attribute-names QueueArn
-          --query Attributes.QueueArn
           --output text
           --endpoint-url $$AWS_ENDPOINT_URL);
 
@@ -91,14 +78,7 @@ services:
           --attributes '{"RedrivePolicy":"{\"deadLetterTargetArn\":\"'$$DLQ_ARN'\",\"maxReceiveCount\":5}"}' \
           --endpoint-url $$AWS_ENDPOINT_URL;
 
-        aws sns subscribe \
-          --topic-arn $$TOPICO_ARN \
-          --protocol sqs \
-          --notification-endpoint $$FILA_ARN \
-          --endpoint-url $$AWS_ENDPOINT_URL;
-
-        echo 'Infraestrutura SNS/SQS provisionada.';
-        echo "Topico SNS: $$TOPICO_ARN";
+        echo 'Infraestrutura SQS provisionada.';
         echo "Fila SQS: $$FILA_URL";
         echo "DLQ SQS: $$DLQ_URL";
     networks:

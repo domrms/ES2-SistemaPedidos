@@ -1,36 +1,35 @@
 using System.Text.Json;
-using Amazon.SimpleNotificationService;
-using Amazon.SimpleNotificationService.Model;
+using Amazon.SQS;
+using Amazon.SQS.Model;
 using ES2_SistemaPedidos.Shared.Contracts;
 
 namespace ES2_SistemaPedidos.Api.Services;
 
-public sealed class PublicadorEventoPedidoSns(
-    IAmazonSimpleNotificationService sns,
+public sealed class PublicadorEventoPedidoSqs(
+    IAmazonSQS sqs,
     IConfiguration configuracao,
-    ILogger<PublicadorEventoPedidoSns> registrador)
+    ILogger<PublicadorEventoPedidoSqs> registrador)
     : IPublicadorEventoPedido
 {
     private static readonly JsonSerializerOptions OpcoesJson = new(JsonSerializerDefaults.Web);
 
     public async Task PublishPedidoCriadoAsync(EventoPedidoCriado eventoPedidoCriado, CancellationToken tokenCancelamento)
     {
-        var topicoArn = configuracao["SNS_TOPICO_ARN"]
-            ?? configuracao["SNS_TOPIC_ARN"]
-            ?? configuracao["AWS:TopicoSnsArn"]
-            ?? configuracao["AWS:SnsTopicArn"];
+        var filaUrl = configuracao["SQS_FILA_URL"]
+            ?? configuracao["SQS_QUEUE_URL"]
+            ?? configuracao["AWS:FilaPedidosUrl"]
+            ?? configuracao["AWS:SqsQueueUrl"];
 
-        if (string.IsNullOrWhiteSpace(topicoArn))
+        if (string.IsNullOrWhiteSpace(filaUrl))
         {
-            throw new InvalidOperationException("ARN do topico SNS nao configurado. Defina SNS_TOPICO_ARN ou AWS:TopicoSnsArn.");
+            throw new InvalidOperationException("URL da fila SQS nao configurada. Defina SQS_FILA_URL ou AWS:FilaPedidosUrl.");
         }
 
         var mensagem = JsonSerializer.Serialize(eventoPedidoCriado, OpcoesJson);
-        var resposta = await sns.PublishAsync(new PublishRequest
+        var resposta = await sqs.SendMessageAsync(new SendMessageRequest
         {
-            TopicArn = topicoArn,
-            Message = mensagem,
-            Subject = "Pedido Criado",
+            QueueUrl = filaUrl,
+            MessageBody = mensagem,
             MessageAttributes = new Dictionary<string, MessageAttributeValue>
             {
                 ["tipoEvento"] = new MessageAttributeValue
@@ -42,7 +41,7 @@ public sealed class PublicadorEventoPedidoSns(
         }, tokenCancelamento);
 
         registrador.LogInformation(
-            "Publicado evento {EventoId} do pedido {PedidoId} na mensagem SNS {MensagemId}",
+            "Publicado evento {EventoId} do pedido {PedidoId} na mensagem SQS {MensagemId}",
             eventoPedidoCriado.EventoId,
             eventoPedidoCriado.PedidoId,
             resposta.MessageId);
