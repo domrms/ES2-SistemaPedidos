@@ -1,0 +1,113 @@
+name: es2-sistema-pedidos
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: es2-sistema-pedidos-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: es2_pedidos
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../database/01-ddl.sql:/docker-entrypoint-initdb.d/01-ddl.sql:ro
+      - ../database/02-dml.sql:/docker-entrypoint-initdb.d/02-dml.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev -d es2_pedidos"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - es2-sistema-pedidos
+
+  floci:
+    image: floci/floci:latest
+    container_name: es2-sistema-pedidos-floci
+    ports:
+      - "4566:4566"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data:/app/data
+    environment:
+      FLOCI_STORAGE_MODE: hybrid
+      FLOCI_SERVICES_DOCKER_NETWORK: es2-sistema-pedidos
+    networks:
+      - es2-sistema-pedidos
+
+  aws-init:
+    image: amazon/aws-cli:latest
+    container_name: es2-sistema-pedidos-aws-init
+    depends_on:
+      - floci
+    entrypoint: ["/bin/sh", "-c"]
+    environment:
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://floci:4566
+    command:
+      - |
+        until aws sns list-topics --endpoint-url $$AWS_ENDPOINT_URL >/dev/null 2>&1; do
+          echo 'Aguardando Floci em http://floci:4566...';
+          sleep 2;
+        done;
+
+        TOPICO_ARN=$$(aws sns create-topic
+          --name EventosPedido
+          --query TopicArn
+          --output text
+          --endpoint-url $$AWS_ENDPOINT_URL);
+
+        FILA_URL=$$(aws sqs create-queue
+          --queue-name processamento-pedidos
+          --query QueueUrl
+          --output text
+          --endpoint-url $$AWS_ENDPOINT_URL);
+
+        DLQ_URL=$$(aws sqs create-queue
+          --queue-name processamento-pedidos-dlq
+          --query QueueUrl
+          --output text
+          --endpoint-url $$AWS_ENDPOINT_URL);
+
+        FILA_ARN=$$(aws sqs get-queue-attributes
+          --queue-url $$FILA_URL
+          --attribute-names QueueArn
+          --query Attributes.QueueArn
+          --output text
+          --endpoint-url $$AWS_ENDPOINT_URL);
+
+        DLQ_ARN=$$(aws sqs get-queue-attributes
+          --queue-url $$DLQ_URL
+          --attribute-names QueueArn
+          --query Attributes.QueueArn
+          --output text
+          --endpoint-url $$AWS_ENDPOINT_URL);
+
+        aws sqs set-queue-attributes \
+          --queue-url $$FILA_URL \
+          --attributes '{"RedrivePolicy":"{\"deadLetterTargetArn\":\"'$$DLQ_ARN'\",\"maxReceiveCount\":5}"}' \
+          --endpoint-url $$AWS_ENDPOINT_URL;
+
+        aws sns subscribe \
+          --topic-arn $$TOPICO_ARN \
+          --protocol sqs \
+          --notification-endpoint $$FILA_ARN \
+          --endpoint-url $$AWS_ENDPOINT_URL;
+
+        echo 'Infraestrutura SNS/SQS provisionada.';
+        echo "Topico SNS: $$TOPICO_ARN";
+        echo "Fila SQS: $$FILA_URL";
+        echo "DLQ SQS: $$DLQ_URL";
+    networks:
+      - es2-sistema-pedidos
+    restart: "no"
+
+volumes:
+  postgres_data:
+
+networks:
+  es2-sistema-pedidos:
+    name: es2-sistema-pedidos
