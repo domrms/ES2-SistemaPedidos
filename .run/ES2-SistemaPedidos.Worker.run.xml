@@ -11,6 +11,13 @@
     <option name="PASS_PARENT_ENVS" value="1" />
     <envs>
       <env name="DOTNET_ENVIRONMENT" value="Development" />
+      <env name="AWS_ACCESS_KEY_ID" value="test" />
+      <env name="AWS_SECRET_ACCESS_KEY" value="test" />
+      <env name="AWS_DEFAULT_REGION" value="us-east-1" />
+      <env name="AWS_REGION" value="us-east-1" />
+      <env name="AWS_ENDPOINT_URL" value="http://localhost:4566" />
+      <env name="AWS_URL_SERVICO" value="http://localhost:4566" />
+      <env name="SQS_FILA_URL" value="http://localhost:4566/000000000000/processamento-solicitacoes" />
     </envs>
     <method v="2">
       <option name="Build" />

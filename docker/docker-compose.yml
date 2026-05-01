@@ -54,23 +54,23 @@ services:
           sleep 2;
         done;
 
-        FILA_URL=$$(aws sqs create-queue
-          --queue-name processamento-solicitacoes
-          --query QueueUrl
-          --output text
+        FILA_URL=$$(aws sqs create-queue \
+          --queue-name processamento-solicitacoes \
+          --query QueueUrl \
+          --output text \
           --endpoint-url $$AWS_ENDPOINT_URL);
 
-        DLQ_URL=$$(aws sqs create-queue
-          --queue-name processamento-solicitacoes-dlq
-          --query QueueUrl
-          --output text
+        DLQ_URL=$$(aws sqs create-queue \
+          --queue-name processamento-solicitacoes-dlq \
+          --query QueueUrl \
+          --output text \
           --endpoint-url $$AWS_ENDPOINT_URL);
 
-        DLQ_ARN=$$(aws sqs get-queue-attributes
-          --queue-url $$DLQ_URL
-          --attribute-names QueueArn
-          --query Attributes.QueueArn
-          --output text
+        DLQ_ARN=$$(aws sqs get-queue-attributes \
+          --queue-url $$DLQ_URL \
+          --attribute-names QueueArn \
+          --query Attributes.QueueArn \
+          --output text \
           --endpoint-url $$AWS_ENDPOINT_URL);
 
         aws sqs set-queue-attributes \
