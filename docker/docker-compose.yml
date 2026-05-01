@@ -55,13 +55,13 @@ services:
         done;
 
         FILA_URL=$$(aws sqs create-queue
-          --queue-name processamento-pedidos
+          --queue-name processamento-solicitacoes
           --query QueueUrl
           --output text
           --endpoint-url $$AWS_ENDPOINT_URL);
 
         DLQ_URL=$$(aws sqs create-queue
-          --queue-name processamento-pedidos-dlq
+          --queue-name processamento-solicitacoes-dlq
           --query QueueUrl
           --output text
           --endpoint-url $$AWS_ENDPOINT_URL);

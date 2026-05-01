@@ -5,9 +5,7 @@ using Amazon.SQS;
 using ES2_SistemaPedidos.Api.Application.Abstractions;
 using ES2_SistemaPedidos.Api.Application.Pedidos;
 using ES2_SistemaPedidos.Api.Infrastructure.Messaging;
-using ES2_SistemaPedidos.Api.Security;
 using ES2_SistemaPedidos.Shared;
-using Microsoft.AspNetCore.Authentication;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -36,7 +34,7 @@ construtorAplicacao.Services.AddSwaggerGen();
 construtorAplicacao.Services.AddPersistenciaPedidos(construtorAplicacao.Configuration);
 construtorAplicacao.Services.AddScoped<ServicoPedido>();
 construtorAplicacao.Services.AddSingleton(TimeProvider.System);
-construtorAplicacao.Services.AddSingleton<IPublicadorEventoPedido, PublicadorEventoPedidoSqs>();
+construtorAplicacao.Services.AddSingleton<IPublicadorEventoSolicitacao, PublicadorEventoPedidoSqs>();
 construtorAplicacao.Services.AddSingleton<IAmazonSQS>(_ =>
 {
     var nomeRegiao = construtorAplicacao.Configuration["AWS_REGIAO"]
@@ -63,19 +61,10 @@ construtorAplicacao.Services.AddSingleton<IAmazonSQS>(_ =>
     return new AmazonSQSClient(configuracaoSqs);
 });
 
-construtorAplicacao.Services
-    .AddAuthentication(PadroesAutenticacaoBearerSimples.EsquemaAutenticacao)
-    .AddScheme<AuthenticationSchemeOptions, ManipuladorAutenticacaoBearerSimples>(
-        PadroesAutenticacaoBearerSimples.EsquemaAutenticacao,
-        opcoes => { });
-construtorAplicacao.Services.AddAuthorization();
-
 var aplicacao = construtorAplicacao.Build();
 
 aplicacao.UseSwagger();
 aplicacao.UseSwaggerUI();
-aplicacao.UseAuthentication();
-aplicacao.UseAuthorization();
 aplicacao.MapControllers();
 
 aplicacao.Run();

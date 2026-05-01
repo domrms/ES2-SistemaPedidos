@@ -1,24 +1,22 @@
+using System.Data.Common;
 using Amazon.Runtime;
 using ES2_SistemaPedidos.Api.Application.Pedidos;
-using ES2_SistemaPedidos.Shared.Domain;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace ES2_SistemaPedidos.Api.Controllers;
 
 [ApiController]
-[Authorize]
-[Route("api/pedidos")]
+[Route("api/solicitacoes")]
 public sealed class PedidosController(ServicoPedido servicoPedido) : ControllerBase
 {
     [HttpPost]
-    public async Task<IActionResult> CreatePedidoAsync(RequisicaoCriarPedido requisicao, CancellationToken tokenCancelamento)
+    public async Task<IActionResult> CriarSolicitacaoAsync(RequisicaoCriarSolicitacao requisicao, CancellationToken tokenCancelamento)
     {
-        Resultado<RespostaCriarPedido> resultado;
+        Resultado<RespostaCriarSolicitacao> resultado;
         try
         {
-            resultado = await servicoPedido.CreatePedidoAsync(requisicao, HttpContext.TraceIdentifier, tokenCancelamento);
+            resultado = await servicoPedido.CriarSolicitacaoAsync(requisicao, tokenCancelamento);
         }
         catch (Exception excecao) when (IsFalhaDependencia(excecao))
         {
@@ -28,40 +26,14 @@ public sealed class PedidosController(ServicoPedido servicoPedido) : ControllerB
         }
 
         return resultado.Match<IActionResult>(
-            sucesso => Created($"/api/pedidos/{sucesso.PedidoId}", sucesso),
-            BadRequest);
-    }
-
-    [HttpGet("{pedidoId:guid}")]
-    public async Task<IActionResult> GetPedidoPorIdAsync(Guid pedidoId, CancellationToken tokenCancelamento)
-    {
-        var pedido = await servicoPedido.GetPedidoPorIdAsync(pedidoId, tokenCancelamento);
-
-        return pedido is null
-            ? NotFound(new RespostaErro("PedidoNaoEncontrado", $"Pedido com ID {pedidoId} nao encontrado"))
-            : Ok(pedido);
-    }
-
-    [HttpGet]
-    public async Task<IActionResult> ListPedidosAsync(
-        [FromQuery] string clienteId,
-        [FromQuery] StatusPedido? status,
-        [FromQuery] int? pular,
-        [FromQuery] int? quantidade,
-        [FromQuery] DateOnly? dataDe,
-        [FromQuery] DateOnly? dataAte,
-        CancellationToken tokenCancelamento)
-    {
-        var resultado = await servicoPedido.ListPedidosAsync(clienteId, status, pular ?? 0, quantidade ?? 20, dataDe, dataAte, tokenCancelamento);
-
-        return resultado.Match<IActionResult>(
-            Ok,
+            sucesso => Accepted(sucesso),
             BadRequest);
     }
 
     private static bool IsFalhaDependencia(Exception excecao)
     {
         return excecao is DbUpdateException
+            or DbException
             or AmazonServiceException
             or HttpRequestException
             || excecao is InvalidOperationException invalidOperationException

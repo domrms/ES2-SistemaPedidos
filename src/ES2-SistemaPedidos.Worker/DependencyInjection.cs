@@ -12,12 +12,10 @@ public static class DependencyInjection
         {
             FilaUrl = configuracao["SQS_FILA_URL"]
                 ?? configuracao["SQS_QUEUE_URL"]
+                ?? configuracao["AWS:FilaSolicitacoesUrl"]
                 ?? configuracao["AWS:FilaPedidosUrl"]
                 ?? configuracao["AWS:SqsQueueUrl"]
-                ?? "http://localhost:4566/000000000000/processamento-pedidos",
-            ValorLimiteAprovacao = decimal.TryParse(configuracao["VALOR_LIMITE_APROVACAO"] ?? configuracao["OrderProcessing:ApprovalThresholdAmount"], out var valorLimite)
-                ? valorLimite
-                : 1000m
+                ?? "http://localhost:4566/000000000000/processamento-solicitacoes"
         };
 
         servicos.AddSingleton(opcoes);

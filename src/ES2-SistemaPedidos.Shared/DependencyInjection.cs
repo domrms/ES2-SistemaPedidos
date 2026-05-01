@@ -16,8 +16,7 @@ public static class DependencyInjection
             ?? "Host=localhost;Port=5432;Database=es2_pedidos;Username=dev;Password=dev";
 
         servicos.AddDbContext<ApplicationDbContext>(opcoes => opcoes.UseNpgsql(stringConexao));
-        servicos.AddScoped<IPedidoRepositorio, PedidoRepositorio>();
-        servicos.AddScoped<IUnidadeTrabalho, UnidadeTrabalho>();
+        servicos.AddScoped<IClienteRepositorio, ClienteRepositorio>();
 
         return servicos;
     }

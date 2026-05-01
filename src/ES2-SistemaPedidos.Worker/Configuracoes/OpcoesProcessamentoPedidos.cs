@@ -2,9 +2,7 @@ namespace ES2_SistemaPedidos.Worker.Configuracoes;
 
 public sealed class OpcoesProcessamentoPedidos
 {
-    public string FilaUrl { get; init; } = "http://localhost:4566/000000000000/processamento-pedidos";
-
-    public decimal ValorLimiteAprovacao { get; init; } = 1000m;
+    public string FilaUrl { get; init; } = "http://localhost:4566/000000000000/processamento-solicitacoes";
 
     public int QuantidadeMaximaMensagens { get; init; } = 10;
 

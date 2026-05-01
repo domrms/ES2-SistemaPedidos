@@ -10,23 +10,26 @@ public sealed class PublicadorEventoPedidoSqs(
     IAmazonSQS sqs,
     IConfiguration configuracao,
     ILogger<PublicadorEventoPedidoSqs> registrador)
-    : IPublicadorEventoPedido
+    : IPublicadorEventoSolicitacao
 {
     private static readonly JsonSerializerOptions OpcoesJson = new(JsonSerializerDefaults.Web);
 
-    public async Task PublishPedidoCriadoAsync(EventoPedidoCriado eventoPedidoCriado, CancellationToken tokenCancelamento)
+    public async Task PublicarAsync(EventoSolicitacaoCliente evento, CancellationToken tokenCancelamento)
     {
         var filaUrl = configuracao["SQS_FILA_URL"]
             ?? configuracao["SQS_QUEUE_URL"]
+            ?? configuracao["AWS:FilaSolicitacoesUrl"]
             ?? configuracao["AWS:FilaPedidosUrl"]
             ?? configuracao["AWS:SqsQueueUrl"];
 
         if (string.IsNullOrWhiteSpace(filaUrl))
         {
-            throw new InvalidOperationException("URL da fila SQS nao configurada. Defina SQS_FILA_URL ou AWS:FilaPedidosUrl.");
+            throw new InvalidOperationException("URL da fila SQS nao configurada. Defina SQS_FILA_URL ou AWS:FilaSolicitacoesUrl.");
         }
 
-        var mensagem = JsonSerializer.Serialize(eventoPedidoCriado, OpcoesJson);
+        var mensagem = JsonSerializer.Serialize(evento, OpcoesJson);
+        registrador.LogInformation("Payload enviado para SQS: {PayloadSqs}", mensagem);
+
         var resposta = await sqs.SendMessageAsync(new SendMessageRequest
         {
             QueueUrl = filaUrl,
@@ -36,15 +39,15 @@ public sealed class PublicadorEventoPedidoSqs(
                 ["tipoEvento"] = new MessageAttributeValue
                 {
                     DataType = "String",
-                    StringValue = eventoPedidoCriado.TipoEvento
+                    StringValue = "SolicitacaoCliente"
                 }
             }
         }, tokenCancelamento);
 
         registrador.LogInformation(
-            "Publicado evento {EventoId} do pedido {PedidoId} na mensagem SQS {MensagemId}",
-            eventoPedidoCriado.EventoId,
-            eventoPedidoCriado.PedidoId,
+            "Publicado evento {RequisicaoId} do cliente {ClienteId} na mensagem SQS {MensagemId}",
+            evento.RequisicaoId,
+            evento.ClienteId,
             resposta.MessageId);
     }
 }
