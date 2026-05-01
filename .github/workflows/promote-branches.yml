@@ -1,0 +1,79 @@
+# .github/workflows/promote-branches.yml
+name: Promote Branches
+
+on:
+  push:
+    branches:
+      - develop
+      - homolog
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Define source and target branches
+        id: vars
+        run: |
+          CURRENT_BRANCH="${GITHUB_REF_NAME}"
+
+          if [ "$CURRENT_BRANCH" = "develop" ]; then
+            echo "source=develop" >> $GITHUB_OUTPUT
+            echo "target=homolog" >> $GITHUB_OUTPUT
+          elif [ "$CURRENT_BRANCH" = "homolog" ]; then
+            echo "source=homolog" >> $GITHUB_OUTPUT
+            echo "target=main" >> $GITHUB_OUTPUT
+          else
+            echo "Branch not mapped"
+            exit 1
+          fi
+
+      - name: Check if PR already exists
+        id: check_pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const source = "${{ steps.vars.outputs.source }}";
+            const target = "${{ steps.vars.outputs.target }}";
+
+            const { data } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              base: target,
+              head: `${context.repo.owner}:${source}`
+            });
+
+            core.setOutput("exists", data.length > 0 ? "true" : "false");
+
+      - name: Create Pull Request
+        if: steps.check_pr.outputs.exists == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const source = "${{ steps.vars.outputs.source }}";
+            const target = "${{ steps.vars.outputs.target }}";
+
+            await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Promote ${source} → ${target}`,
+              head: source,
+              base: target,
+              body: `
+## 🚀 Promoção Automática
+
+Branch origem: \`${source}\`
+Branch destino: \`${target}\`
+
+Pull Request criado automaticamente via GitHub Actions.
+              `
+            });
+
+      - name: PR already exists
+        if: steps.check_pr.outputs.exists == 'true'
+        run: echo "Pull Request already open."
