@@ -45,15 +45,56 @@ static AmazonSQSClient CriarClienteSqs(IConfiguration configuracao)
         RegionEndpoint = RegionEndpoint.GetBySystemName(nomeRegiao)
     };
 
-    var urlServico = GetUrlServicoAws(configuracao);
-    if (!string.IsNullOrWhiteSpace(urlServico))
+    if (UsarAwsReal(configuracao))
     {
-        configuracaoSqs.ServiceURL = urlServico;
-        configuracaoSqs.AuthenticationRegion = nomeRegiao;
-        return new AmazonSQSClient(new BasicAWSCredentials("test", "test"), configuracaoSqs);
+        var credenciaisAws = GetCredenciaisConfiguradas(configuracao);
+        return credenciaisAws is null
+            ? new AmazonSQSClient(configuracaoSqs)
+            : new AmazonSQSClient(credenciaisAws, configuracaoSqs);
     }
 
-    return new AmazonSQSClient(configuracaoSqs);
+    configuracaoSqs.ServiceURL = GetUrlServicoAws(configuracao) ?? "http://localhost:4566";
+    configuracaoSqs.AuthenticationRegion = nomeRegiao;
+
+    return new AmazonSQSClient(GetCredenciaisLocais(configuracao), configuracaoSqs);
+}
+
+static bool UsarAwsReal(IConfiguration configuracao)
+{
+    return bool.TryParse(
+        configuracao["AWS_USAR_AWS_REAL"]
+        ?? configuracao["AWS:UsarAwsReal"],
+        out var usarAwsReal)
+        && usarAwsReal;
+}
+
+static BasicAWSCredentials GetCredenciaisLocais(IConfiguration configuracao)
+{
+    var accessKeyId = configuracao["AWS_ACCESS_KEY_ID"]
+        ?? configuracao["AWS:AccessKeyId"]
+        ?? "test";
+
+    var secretAccessKey = configuracao["AWS_SECRET_ACCESS_KEY"]
+        ?? configuracao["AWS:SecretAccessKey"]
+        ?? "test";
+
+    return new BasicAWSCredentials(accessKeyId, secretAccessKey);
+}
+
+static BasicAWSCredentials? GetCredenciaisConfiguradas(IConfiguration configuracao)
+{
+    var accessKeyId = configuracao["AWS_ACCESS_KEY_ID"]
+        ?? configuracao["AWS:AccessKeyId"];
+
+    var secretAccessKey = configuracao["AWS_SECRET_ACCESS_KEY"]
+        ?? configuracao["AWS:SecretAccessKey"];
+
+    if (string.IsNullOrWhiteSpace(accessKeyId) || string.IsNullOrWhiteSpace(secretAccessKey))
+    {
+        return null;
+    }
+
+    return new BasicAWSCredentials(accessKeyId, secretAccessKey);
 }
 
 static string GetNomeRegiao(IConfiguration configuracao)

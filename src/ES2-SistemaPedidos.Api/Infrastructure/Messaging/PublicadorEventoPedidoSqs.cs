@@ -45,9 +45,10 @@ public sealed class PublicadorEventoPedidoSqs(
         }, tokenCancelamento);
 
         registrador.LogInformation(
-            "Publicado evento {RequisicaoId} do cliente {ClienteId} na mensagem SQS {MensagemId}",
-            evento.RequisicaoId,
+            "Publicado evento {EventoId} do cliente {ClienteId} e produto {ProdutoId} na mensagem SQS {MensagemId}",
+            evento.EventoId,
             evento.ClienteId,
+            evento.ProdutoId,
             resposta.MessageId);
     }
 }

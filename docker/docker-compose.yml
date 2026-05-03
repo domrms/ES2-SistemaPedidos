@@ -22,6 +22,26 @@ services:
     networks:
       - es2-sistema-pedidos
 
+  database-init:
+    image: postgres:15-alpine
+    container_name: es2-sistema-pedidos-database-init
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: dev
+    volumes:
+      - ../database:/scripts:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        psql -h postgres -U dev -d es2_pedidos -v ON_ERROR_STOP=1 -f /scripts/01-ddl.sql;
+        psql -h postgres -U dev -d es2_pedidos -v ON_ERROR_STOP=1 -f /scripts/02-dml.sql;
+        echo 'Scripts DDL e DML executados.';
+    networks:
+      - es2-sistema-pedidos
+    restart: "no"
+
   floci:
     image: floci/floci:latest
     container_name: es2-sistema-pedidos-floci

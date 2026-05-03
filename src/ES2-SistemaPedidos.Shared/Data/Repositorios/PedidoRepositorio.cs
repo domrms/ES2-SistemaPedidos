@@ -12,3 +12,13 @@ public sealed class ClienteRepositorio(ApplicationDbContext contextoBanco) : ICl
             .AnyAsync(cliente => cliente.Id == clienteId, tokenCancelamento);
     }
 }
+
+public sealed class ProdutoRepositorio(ApplicationDbContext contextoBanco) : IProdutoRepositorio
+{
+    public async Task<bool> ExisteProdutoAsync(int produtoId, CancellationToken tokenCancelamento)
+    {
+        return await contextoBanco.Produtos
+            .AsNoTracking()
+            .AnyAsync(produto => produto.Id == produtoId, tokenCancelamento);
+    }
+}
