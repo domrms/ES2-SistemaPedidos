@@ -1,6 +1,6 @@
 namespace ES2_SistemaPedidos.Worker.Configuracoes;
 
-public sealed class OpcoesProcessamentoPedidos
+public sealed class ProcessamentoPedidosOptions
 {
     public string FilaUrl { get; init; } = "http://localhost:4566/000000000000/processamento-solicitacoes";
 

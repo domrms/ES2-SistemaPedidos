@@ -8,7 +8,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddOrderProcessingOptions(this IServiceCollection servicos, IConfiguration configuracao)
     {
-        var opcoes = new OpcoesProcessamentoPedidos
+        var opcoes = new ProcessamentoPedidosOptions
         {
             FilaUrl = configuracao["SQS_FILA_URL"]
                 ?? configuracao["SQS_QUEUE_URL"]

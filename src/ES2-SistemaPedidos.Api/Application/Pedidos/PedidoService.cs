@@ -6,7 +6,7 @@ using ES2_SistemaPedidos.Shared.Domain.Repositories;
 
 namespace ES2_SistemaPedidos.Api.Application.Pedidos;
 
-public sealed class ServicoPedido(
+public sealed class PedidoService(
     IClienteRepositorio clienteRepositorio,
     IProdutoRepositorio produtoRepositorio,
     IPublicadorEventoSolicitacao publicadorEvento,

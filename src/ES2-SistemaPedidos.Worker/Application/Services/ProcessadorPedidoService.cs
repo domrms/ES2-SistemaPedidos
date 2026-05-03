@@ -6,10 +6,10 @@ using Microsoft.Extensions.Logging;
 
 namespace ES2_SistemaPedidos.Worker.Application.Services;
 
-public sealed class ProcessadorPedido(
-    IPedidoProcessamentoRepositorio repositorio,
+public sealed class ProcessadorPedidoService(
+    IPedidoProcessamentoRepository repository,
     TimeProvider provedorTempo,
-    ILogger<ProcessadorPedido> registrador)
+    ILogger<ProcessadorPedidoService> registrador)
 {
     private static readonly JsonSerializerOptions OpcoesJson = new(JsonSerializerDefaults.Web);
 
@@ -25,7 +25,7 @@ public sealed class ProcessadorPedido(
             return false;
         }
 
-        await repositorio.RegistrarEventoAsync(new EventoProcessamento(
+        await repository.RegistrarEventoAsync(new EventoProcessamento(
             evento.ClienteId,
             evento.ProdutoId,
             evento.EventoId,

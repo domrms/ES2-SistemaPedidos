@@ -6,7 +6,7 @@ using Npgsql;
 
 namespace ES2_SistemaPedidos.Worker.Infrastructure.Data;
 
-public sealed class PedidoProcessamentoRepositorioDapper(IConfiguration configuracao) : IPedidoProcessamentoRepositorio
+public sealed class PedidoProcessamentoRepositoryDapper(IConfiguration configuracao) : IPedidoProcessamentoRepository
 {
     private readonly string _stringConexao = configuracao.GetConnectionString("BancoPedidos")
         ?? configuracao["DATABASE_URL"]

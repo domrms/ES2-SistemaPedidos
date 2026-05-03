@@ -14,7 +14,7 @@ using Serilog;
 
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
-    .WriteTo.Console(new HorarioBrasiliaConsoleFormatter())
+    .WriteTo.Console(new DateTimeConsoleFormatter())
     .CreateLogger();
 
 var host = Host.CreateDefaultBuilder(args)
@@ -22,15 +22,15 @@ var host = Host.CreateDefaultBuilder(args)
     {
         configuracaoLog
             .Enrich.FromLogContext()
-            .WriteTo.Console(new HorarioBrasiliaConsoleFormatter());
+            .WriteTo.Console(new DateTimeConsoleFormatter());
     })
     .ConfigureServices((contexto, servicos) =>
     {
         servicos.AddOrderProcessingOptions(contexto.Configuration);
         servicos.AddSingleton(TimeProvider.System);
         servicos.AddSingleton<IAmazonSQS>(_ => CriarClienteSqs(contexto.Configuration));
-        servicos.AddScoped<IPedidoProcessamentoRepositorio, PedidoProcessamentoRepositorioDapper>();
-        servicos.AddScoped<ProcessadorPedido>();
+        servicos.AddScoped<IPedidoProcessamentoRepository, PedidoProcessamentoRepositoryDapper>();
+        servicos.AddScoped<ProcessadorPedidoService>();
         servicos.AddHostedService<ServicoWorkerPedidos>();
     })
     .Build();
