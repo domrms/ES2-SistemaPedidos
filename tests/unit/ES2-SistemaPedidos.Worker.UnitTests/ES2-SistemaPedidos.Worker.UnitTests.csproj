@@ -16,6 +16,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\src\ES2-SistemaPedidos.Worker\ES2-SistemaPedidos.Worker.csproj" />
+    <ProjectReference Include="..\..\..\src\ES2-SistemaPedidos.Shared\ES2-SistemaPedidos.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
 

@@ -1,0 +1,27 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="ES2-SistemaPedidos.Api" type="DotNetProject" factoryName=".NET Project">
+    <option name="PROJECT_PATH" value="$PROJECT_DIR$/src/ES2-SistemaPedidos.Api/ES2-SistemaPedidos.Api.csproj" />
+    <option name="PROJECT_TFM" value="net10.0" />
+    <option name="PROJECT_ARGUMENTS" value="" />
+    <option name="PROJECT_WORKING_DIRECTORY" value="$PROJECT_DIR$/src/ES2-SistemaPedidos.Api" />
+    <option name="PROJECT_KIND" value="Web" />
+    <option name="LAUNCH_PROFILE_NAME" value="ES2-SistemaPedidos.Api" />
+    <option name="USE_EXTERNAL_CONSOLE" value="0" />
+    <option name="USE_MONO" value="0" />
+    <option name="RUNTIME_ARGUMENTS" value="" />
+    <option name="PASS_PARENT_ENVS" value="1" />
+    <envs>
+      <env name="ASPNETCORE_ENVIRONMENT" value="Development" />
+      <env name="AWS_ACCESS_KEY_ID" value="test" />
+      <env name="AWS_SECRET_ACCESS_KEY" value="test" />
+      <env name="AWS_DEFAULT_REGION" value="us-east-1" />
+      <env name="AWS_REGION" value="us-east-1" />
+      <env name="AWS_ENDPOINT_URL" value="http://localhost:4566" />
+      <env name="AWS_URL_SERVICO" value="http://localhost:4566" />
+      <env name="SQS_FILA_URL" value="http://localhost:4566/000000000000/processamento-solicitacoes" />
+    </envs>
+    <method v="2">
+      <option name="Build" />
+    </method>
+  </configuration>
+</component>
