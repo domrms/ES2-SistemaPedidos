@@ -6,7 +6,7 @@ using Npgsql;
 
 namespace ES2_SistemaPedidos.Worker.Infrastructure.Data;
 
-public sealed class PedidoProcessamentoRepositorioDapper(IConfiguration configuracao) : IPedidoProcessamentoRepositorio
+public sealed class PedidoProcessamentoRepositoryDapper(IConfiguration configuracao) : IPedidoProcessamentoRepository
 {
     private readonly string _stringConexao = configuracao.GetConnectionString("BancoPedidos")
         ?? configuracao["DATABASE_URL"]
@@ -17,12 +17,14 @@ public sealed class PedidoProcessamentoRepositorioDapper(IConfiguration configur
         const string sql = """
             INSERT INTO eventos (
                 cliente_id,
+                produto_id,
                 evento_id,
                 data_hora_evento,
                 salvo_em
             )
             VALUES (
                 @ClienteId,
+                @ProdutoId,
                 @EventoId,
                 @DataHoraEvento,
                 @SalvoEm
@@ -30,8 +32,14 @@ public sealed class PedidoProcessamentoRepositorioDapper(IConfiguration configur
             ON CONFLICT (evento_id) DO NOTHING;
             """;
 
+        var parametros = evento with
+        {
+            DataHoraEvento = evento.DataHoraEvento.ToUniversalTime(),
+            SalvoEm = evento.SalvoEm.ToUniversalTime()
+        };
+
         await using var conexao = await AbrirConexaoAsync(tokenCancelamento);
-        await conexao.ExecuteAsync(new CommandDefinition(sql, evento, cancellationToken: tokenCancelamento));
+        await conexao.ExecuteAsync(new CommandDefinition(sql, parametros, cancellationToken: tokenCancelamento));
     }
 
     private async Task<NpgsqlConnection> AbrirConexaoAsync(CancellationToken tokenCancelamento)

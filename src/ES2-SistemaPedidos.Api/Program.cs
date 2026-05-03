@@ -6,21 +6,18 @@ using ES2_SistemaPedidos.Api.Application.Abstractions;
 using ES2_SistemaPedidos.Api.Application.Pedidos;
 using ES2_SistemaPedidos.Api.Infrastructure.Messaging;
 using ES2_SistemaPedidos.Shared;
-using ES2_SistemaPedidos.Shared.Logging;
 using Serilog;
 
-Log.Logger = new LoggerConfiguration()
-    .Enrich.FromLogContext()
-    .WriteTo.Console(new HorarioBrasiliaConsoleFormatter())
-    .CreateLogger();
-
 var construtorAplicacao = WebApplication.CreateBuilder(args);
+
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(construtorAplicacao.Configuration)
+    .CreateLogger();
 
 construtorAplicacao.Host.UseSerilog((contexto, servicos, configuracaoLog) =>
 {
     configuracaoLog
-        .Enrich.FromLogContext()
-        .WriteTo.Console(new HorarioBrasiliaConsoleFormatter());
+        .ReadFrom.Configuration(contexto.Configuration);
 });
 
 construtorAplicacao.Services
@@ -33,9 +30,9 @@ construtorAplicacao.Services
 construtorAplicacao.Services.AddEndpointsApiExplorer();
 construtorAplicacao.Services.AddSwaggerGen();
 construtorAplicacao.Services.AddPersistenciaPedidos(construtorAplicacao.Configuration);
-construtorAplicacao.Services.AddScoped<ServicoPedido>();
+construtorAplicacao.Services.AddScoped<PedidoService>();
 construtorAplicacao.Services.AddSingleton(TimeProvider.System);
-construtorAplicacao.Services.AddSingleton<IPublicadorEventoSolicitacao, PublicadorEventoPedidoSqs>();
+construtorAplicacao.Services.AddSingleton<IPublicadorEventoSolicitacao, PedidoPublisherEventSqs>();
 construtorAplicacao.Services.AddSingleton<IAmazonSQS>(_ =>
 {
     var nomeRegiao = construtorAplicacao.Configuration["AWS_REGIAO"]

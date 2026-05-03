@@ -4,7 +4,7 @@ using Serilog.Formatting;
 
 namespace ES2_SistemaPedidos.Shared.Logging;
 
-public sealed class HorarioBrasiliaConsoleFormatter : ITextFormatter
+public sealed class DateTimeConsoleFormatter : ITextFormatter
 {
     private static readonly TimeSpan DeslocamentoBrasilia = TimeSpan.FromHours(-3);
 

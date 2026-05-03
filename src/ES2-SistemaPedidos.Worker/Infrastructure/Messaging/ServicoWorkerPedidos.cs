@@ -11,7 +11,7 @@ namespace ES2_SistemaPedidos.Worker.Infrastructure.Messaging;
 public sealed class ServicoWorkerPedidos(
     IAmazonSQS sqs,
     IServiceScopeFactory fabricaEscopo,
-    OpcoesProcessamentoPedidos opcoes,
+    ProcessamentoPedidosOptions opcoes,
     ILogger<ServicoWorkerPedidos> registrador)
     : BackgroundService
 {
@@ -51,7 +51,7 @@ public sealed class ServicoWorkerPedidos(
     private async Task ProcessMessageAsync(Message mensagem, CancellationToken tokenCancelamento)
     {
         using var escopo = fabricaEscopo.CreateScope();
-        var processador = escopo.ServiceProvider.GetRequiredService<ProcessadorPedido>();
+        var processador = escopo.ServiceProvider.GetRequiredService<ProcessadorPedidoService>();
 
         try
         {

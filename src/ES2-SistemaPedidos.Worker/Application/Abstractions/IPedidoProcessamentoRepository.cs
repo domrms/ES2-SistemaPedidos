@@ -2,7 +2,7 @@ using ES2_SistemaPedidos.Worker.Application.Models;
 
 namespace ES2_SistemaPedidos.Worker.Application.Abstractions;
 
-public interface IPedidoProcessamentoRepositorio
+public interface IPedidoProcessamentoRepository
 {
     Task RegistrarEventoAsync(EventoProcessamento evento, CancellationToken tokenCancelamento);
 }

@@ -8,7 +8,7 @@ namespace ES2_SistemaPedidos.Api.Controllers;
 
 [ApiController]
 [Route("api/solicitacoes")]
-public sealed class PedidosController(ServicoPedido servicoPedido) : ControllerBase
+public sealed class PedidosController(PedidoService pedidoService) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> CriarSolicitacaoAsync(RequisicaoCriarSolicitacao requisicao,
@@ -17,7 +17,7 @@ public sealed class PedidosController(ServicoPedido servicoPedido) : ControllerB
         Resultado<RespostaCriarSolicitacao> resultado;
         try
         {
-            resultado = await servicoPedido.CriarSolicitacaoAsync(requisicao, tokenCancelamento);
+            resultado = await pedidoService.CriarSolicitacaoAsync(requisicao, tokenCancelamento);
         }
         catch (Exception excecao) when (IsFalhaDependencia(excecao))
         {

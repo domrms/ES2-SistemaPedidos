@@ -1,10 +1,11 @@
 namespace ES2_SistemaPedidos.Api;
 
-public sealed record RequisicaoCriarSolicitacao(int ClienteId);
+public sealed record RequisicaoCriarSolicitacao(int ClienteId, int ProdutoId);
 
 public sealed record RespostaCriarSolicitacao(
     int ClienteId,
-    Guid RequisicaoId,
+    int ProdutoId,
+    string EventoId,
     DateTimeOffset DataHoraRequisicao);
 
 public sealed record RespostaErro(

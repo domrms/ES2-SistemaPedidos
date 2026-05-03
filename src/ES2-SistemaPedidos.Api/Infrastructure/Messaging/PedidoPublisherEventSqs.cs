@@ -6,10 +6,10 @@ using ES2_SistemaPedidos.Shared.Contracts;
 
 namespace ES2_SistemaPedidos.Api.Infrastructure.Messaging;
 
-public sealed class PublicadorEventoPedidoSqs(
+public sealed class PedidoPublisherEventSqs(
     IAmazonSQS sqs,
     IConfiguration configuracao,
-    ILogger<PublicadorEventoPedidoSqs> registrador)
+    ILogger<PedidoPublisherEventSqs> registrador)
     : IPublicadorEventoSolicitacao
 {
     private static readonly JsonSerializerOptions OpcoesJson = new(JsonSerializerDefaults.Web);
@@ -45,9 +45,10 @@ public sealed class PublicadorEventoPedidoSqs(
         }, tokenCancelamento);
 
         registrador.LogInformation(
-            "Publicado evento {RequisicaoId} do cliente {ClienteId} na mensagem SQS {MensagemId}",
-            evento.RequisicaoId,
+            "Publicado evento {EventoId} do cliente {ClienteId} e produto {ProdutoId} na mensagem SQS {MensagemId}",
+            evento.EventoId,
             evento.ClienteId,
+            evento.ProdutoId,
             resposta.MessageId);
     }
 }
