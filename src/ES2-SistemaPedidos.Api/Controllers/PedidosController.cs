@@ -28,7 +28,7 @@ public sealed class PedidosController(PedidoService pedidoService) : ControllerB
         }
 
         return resultado.Match<IActionResult>(
-            sucesso => Accepted(sucesso),
+            Accepted,
             BadRequest);
     }
 

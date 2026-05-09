@@ -10,7 +10,7 @@ public sealed class PedidoProcessamentoRepositoryDapper(IConfiguration configura
 {
     private readonly string _stringConexao = configuracao.GetConnectionString("BancoPedidos")
         ?? configuracao["DATABASE_URL"]
-        ?? "Host=localhost;Port=5432;Database=es2_pedidos;Username=dev;Password=dev";
+        ?? throw new InvalidOperationException("String de conexao nao configurada. Defina ConnectionStrings:BancoPedidos ou DATABASE_URL.");
 
     public async Task RegistrarEventoAsync(EventoProcessamento evento, CancellationToken tokenCancelamento)
     {

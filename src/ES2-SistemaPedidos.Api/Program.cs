@@ -1,6 +1,5 @@
 using System.Text.Json.Serialization;
 using Amazon;
-using Amazon.Runtime;
 using Amazon.SQS;
 using ES2_SistemaPedidos.Api.Application.Abstractions;
 using ES2_SistemaPedidos.Api.Application.Pedidos;
@@ -38,25 +37,16 @@ construtorAplicacao.Services.AddSingleton<IAmazonSQS>(_ =>
     var nomeRegiao = construtorAplicacao.Configuration["AWS_REGIAO"]
         ?? construtorAplicacao.Configuration["AWS_REGION"]
         ?? construtorAplicacao.Configuration["AWS:Regiao"]
-        ?? construtorAplicacao.Configuration["AWS:Region"]
-        ?? "us-east-1";
-    var configuracaoSqs = new AmazonSQSConfig
+        ?? construtorAplicacao.Configuration["AWS:Region"];
+    if (string.IsNullOrWhiteSpace(nomeRegiao))
     {
-        RegionEndpoint = RegionEndpoint.GetBySystemName(nomeRegiao)
-    };
-
-    var urlServico = construtorAplicacao.Configuration["AWS_URL_SERVICO"]
-        ?? construtorAplicacao.Configuration["AWS_ENDPOINT_URL"]
-        ?? construtorAplicacao.Configuration["AWS:UrlServico"]
-        ?? construtorAplicacao.Configuration["AWS:ServiceUrl"];
-    if (!string.IsNullOrWhiteSpace(urlServico))
-    {
-        configuracaoSqs.ServiceURL = urlServico;
-        configuracaoSqs.AuthenticationRegion = nomeRegiao;
-        return new AmazonSQSClient(new BasicAWSCredentials("test", "test"), configuracaoSqs);
+        throw new InvalidOperationException("Regiao AWS nao configurada. Defina AWS:Regiao.");
     }
 
-    return new AmazonSQSClient(configuracaoSqs);
+    return new AmazonSQSClient(new AmazonSQSConfig
+    {
+        RegionEndpoint = RegionEndpoint.GetBySystemName(nomeRegiao)
+    });
 });
 
 var aplicacao = construtorAplicacao.Build();
