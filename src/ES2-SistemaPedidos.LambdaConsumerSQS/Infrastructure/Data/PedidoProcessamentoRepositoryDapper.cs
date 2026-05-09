@@ -1,10 +1,10 @@
 using Dapper;
-using ES2_SistemaPedidos.Worker.Application.Abstractions;
-using ES2_SistemaPedidos.Worker.Application.Models;
+using ES2_SistemaPedidos.LambdaConsumerSQS.Application.Abstractions;
+using ES2_SistemaPedidos.LambdaConsumerSQS.Application.Models;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 
-namespace ES2_SistemaPedidos.Worker.Infrastructure.Data;
+namespace ES2_SistemaPedidos.LambdaConsumerSQS.Infrastructure.Data;
 
 public sealed class PedidoProcessamentoRepositoryDapper(IConfiguration configuracao) : IPedidoProcessamentoRepository
 {

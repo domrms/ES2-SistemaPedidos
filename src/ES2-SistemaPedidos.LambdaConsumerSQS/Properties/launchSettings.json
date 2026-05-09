@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "Mock Lambda Test Tool - Worker": {
+    "Mock Lambda Test Tool - LambdaConsumerSQS": {
       "commandName": "Executable",
       "executablePath": "dotnet",
       "commandLineArgs": "tool run dotnet-lambda-test-tool-8.0 -- --port 5050 --path .",
@@ -9,7 +9,7 @@
         "DOTNET_ENVIRONMENT": "Development"
       }
     },
-    "Worker Local": {
+    "LambdaConsumerSQS Local": {
       "commandName": "Project",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Development"

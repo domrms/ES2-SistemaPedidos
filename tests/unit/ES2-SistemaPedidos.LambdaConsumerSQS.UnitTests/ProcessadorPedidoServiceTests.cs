@@ -1,11 +1,11 @@
 using System.Text.Json;
 using ES2_SistemaPedidos.Shared.Contracts;
-using ES2_SistemaPedidos.Worker.Application.Abstractions;
-using ES2_SistemaPedidos.Worker.Application.Models;
-using ES2_SistemaPedidos.Worker.Application.Services;
+using ES2_SistemaPedidos.LambdaConsumerSQS.Application.Abstractions;
+using ES2_SistemaPedidos.LambdaConsumerSQS.Application.Models;
+using ES2_SistemaPedidos.LambdaConsumerSQS.Application.Services;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace ES2_SistemaPedidos.Worker.UnitTests;
+namespace ES2_SistemaPedidos.LambdaConsumerSQS.UnitTests;
 
 public sealed class ProcessadorPedidoServiceTests
 {

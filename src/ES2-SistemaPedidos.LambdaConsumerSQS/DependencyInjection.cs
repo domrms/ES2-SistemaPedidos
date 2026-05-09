@@ -1,10 +1,10 @@
-using ES2_SistemaPedidos.Worker.Application.Abstractions;
-using ES2_SistemaPedidos.Worker.Application.Services;
-using ES2_SistemaPedidos.Worker.Infrastructure.Data;
+using ES2_SistemaPedidos.LambdaConsumerSQS.Application.Abstractions;
+using ES2_SistemaPedidos.LambdaConsumerSQS.Application.Services;
+using ES2_SistemaPedidos.LambdaConsumerSQS.Infrastructure.Data;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace ES2_SistemaPedidos.Worker;
+namespace ES2_SistemaPedidos.LambdaConsumerSQS;
 
 public static class DependencyInjection
 {

@@ -1,7 +1,7 @@
 using Amazon.Lambda.Core;
 using Amazon.Lambda.SQSEvents;
 using ES2_SistemaPedidos.Shared.Logging;
-using ES2_SistemaPedidos.Worker.Application.Services;
+using ES2_SistemaPedidos.LambdaConsumerSQS.Application.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -9,7 +9,7 @@ using Serilog;
 
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 
-namespace ES2_SistemaPedidos.Worker;
+namespace ES2_SistemaPedidos.LambdaConsumerSQS;
 
 public sealed class Function
 {

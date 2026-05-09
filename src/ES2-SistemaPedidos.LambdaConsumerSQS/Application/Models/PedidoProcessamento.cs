@@ -1,4 +1,4 @@
-namespace ES2_SistemaPedidos.Worker.Application.Models;
+namespace ES2_SistemaPedidos.LambdaConsumerSQS.Application.Models;
 
 public sealed record EventoProcessamento(
     int ClienteId,
