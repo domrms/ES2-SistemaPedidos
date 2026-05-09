@@ -1,10 +1,10 @@
 using System.Text.Json;
 using ES2_SistemaPedidos.Shared.Contracts;
-using ES2_SistemaPedidos.Worker.Application.Abstractions;
-using ES2_SistemaPedidos.Worker.Application.Models;
+using ES2_SistemaPedidos.LambdaConsumerSQS.Application.Abstractions;
+using ES2_SistemaPedidos.LambdaConsumerSQS.Application.Models;
 using Microsoft.Extensions.Logging;
 
-namespace ES2_SistemaPedidos.Worker.Application.Services;
+namespace ES2_SistemaPedidos.LambdaConsumerSQS.Application.Services;
 
 public sealed class ProcessadorPedidoService(
     IPedidoProcessamentoRepository repository,

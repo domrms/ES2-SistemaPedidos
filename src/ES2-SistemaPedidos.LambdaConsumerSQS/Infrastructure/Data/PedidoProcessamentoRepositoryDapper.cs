@@ -1,16 +1,16 @@
 using Dapper;
-using ES2_SistemaPedidos.Worker.Application.Abstractions;
-using ES2_SistemaPedidos.Worker.Application.Models;
+using ES2_SistemaPedidos.LambdaConsumerSQS.Application.Abstractions;
+using ES2_SistemaPedidos.LambdaConsumerSQS.Application.Models;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 
-namespace ES2_SistemaPedidos.Worker.Infrastructure.Data;
+namespace ES2_SistemaPedidos.LambdaConsumerSQS.Infrastructure.Data;
 
 public sealed class PedidoProcessamentoRepositoryDapper(IConfiguration configuracao) : IPedidoProcessamentoRepository
 {
     private readonly string _stringConexao = configuracao.GetConnectionString("BancoPedidos")
         ?? configuracao["DATABASE_URL"]
-        ?? "Host=localhost;Port=5432;Database=es2_pedidos;Username=dev;Password=dev";
+        ?? throw new InvalidOperationException("String de conexao nao configurada. Defina ConnectionStrings:BancoPedidos ou DATABASE_URL.");
 
     public async Task RegistrarEventoAsync(EventoProcessamento evento, CancellationToken tokenCancelamento)
     {

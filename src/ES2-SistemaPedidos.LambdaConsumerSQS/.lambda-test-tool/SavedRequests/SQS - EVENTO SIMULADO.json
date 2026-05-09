@@ -1,0 +1,25 @@
+{
+  "Records": [
+    {
+      "messageId": "mensagem-local-001",
+      "receiptHandle": "receipt-local-001",
+      "body": "{\"clienteId\":1,\"produtoId\":1,\"eventoId\":\"ES2-LOCAL-0001\",\"dataHoraRequisicao\":\"2026-05-09T10:00:00-03:00\"}",
+      "attributes": {
+        "ApproximateReceiveCount": "1",
+        "SentTimestamp": "1778326800000",
+        "SenderId": "000000000000",
+        "ApproximateFirstReceiveTimestamp": "1778326800000"
+      },
+      "messageAttributes": {
+        "tipoEvento": {
+          "stringValue": "SolicitacaoCliente",
+          "dataType": "String"
+        }
+      },
+      "md5OfBody": "00000000000000000000000000000000",
+      "eventSource": "aws:sqs",
+      "eventSourceARN": "arn:aws:sqs:us-east-1:000000000000:processamento-solicitacoes",
+      "awsRegion": "us-east-1"
+    }
+  ]
+}

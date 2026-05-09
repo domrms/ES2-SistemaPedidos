@@ -1,6 +1,6 @@
-using ES2_SistemaPedidos.Worker.Application.Models;
+using ES2_SistemaPedidos.LambdaConsumerSQS.Application.Models;
 
-namespace ES2_SistemaPedidos.Worker.Application.Abstractions;
+namespace ES2_SistemaPedidos.LambdaConsumerSQS.Application.Abstractions;
 
 public interface IPedidoProcessamentoRepository
 {
