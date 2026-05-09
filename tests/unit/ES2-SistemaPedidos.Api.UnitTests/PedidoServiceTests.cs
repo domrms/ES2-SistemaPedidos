@@ -109,6 +109,56 @@ public sealed partial class PedidoServiceTests
         Assert.Equal(resposta.DataHoraRequisicao, evento.DataHoraRequisicao);
     }
 
+    [Fact]
+    public async Task ListarEventosAsync_quando_nao_ha_eventos_retorna_lista_vazia()
+    {
+        var fixture = new Fixture { Eventos = [] };
+        var servico = fixture.CriarServico();
+
+        var resposta = await servico.ListarEventosAsync(CancellationToken.None);
+
+        Assert.Empty(resposta.Eventos);
+    }
+
+    [Fact]
+    public async Task ListarEventosAsync_quando_ha_eventos_retorna_lista_com_nomes()
+    {
+        var eventoDetalhado1 = new EventoClienteDetalhado(
+            1,
+            "Cliente A",
+            "Produto X",
+            "ES2-12345678-100000",
+            new DateTimeOffset(2026, 5, 3, 10, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2026, 5, 3, 10, 0, 5, TimeSpan.Zero));
+
+        var eventoDetalhado2 = new EventoClienteDetalhado(
+            2,
+            "Cliente B",
+            "Produto Y",
+            "ES2-87654321-110000",
+            new DateTimeOffset(2026, 5, 3, 11, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2026, 5, 3, 11, 0, 5, TimeSpan.Zero));
+
+        var fixture = new Fixture { Eventos = [eventoDetalhado1, eventoDetalhado2] };
+        var servico = fixture.CriarServico();
+
+        var resposta = await servico.ListarEventosAsync(CancellationToken.None);
+
+        Assert.Equal(2, resposta.Eventos.Count);
+        
+        var primeiro = resposta.Eventos.First();
+        Assert.Equal(1, primeiro.Id);
+        Assert.Equal("Cliente A", primeiro.NomeCliente);
+        Assert.Equal("Produto X", primeiro.NomeProduto);
+        Assert.Equal("ES2-12345678-100000", primeiro.EventoId);
+
+        var segundo = resposta.Eventos.Last();
+        Assert.Equal(2, segundo.Id);
+        Assert.Equal("Cliente B", segundo.NomeCliente);
+        Assert.Equal("Produto Y", segundo.NomeProduto);
+        Assert.Equal("ES2-87654321-110000", segundo.EventoId);
+    }
+
     private static RespostaErroValidacao ExtrairErro(Resultado<RespostaCriarSolicitacao> resultado)
     {
         return resultado.Match<RespostaErroValidacao?>(_ => null, erro => erro)!;
@@ -128,9 +178,13 @@ public sealed partial class PedidoServiceTests
 
         public bool ProdutoExiste { get; init; } = true;
 
+        public IReadOnlyCollection<EventoClienteDetalhado> Eventos { get; init; } = [];
+
         public FakeClienteRepositorio Clientes { get; private set; } = null!;
 
         public FakeProdutoRepositorio Produtos { get; private set; } = null!;
+
+        public FakeEventoRepositorio EventoRepositorio { get; private set; } = null!;
 
         public FakePublicadorEventoSolicitacao Publicador { get; } = new();
 
@@ -138,8 +192,9 @@ public sealed partial class PedidoServiceTests
         {
             Clientes = new FakeClienteRepositorio(ClienteExiste);
             Produtos = new FakeProdutoRepositorio(ProdutoExiste);
+            EventoRepositorio = new FakeEventoRepositorio(Eventos);
 
-            return new PedidoService(Clientes, Produtos, Publicador, new FakeTimeProvider(AgoraUtc));
+            return new PedidoService(Clientes, Produtos, EventoRepositorio, Publicador, new FakeTimeProvider(AgoraUtc));
         }
     }
 
@@ -162,6 +217,14 @@ public sealed partial class PedidoServiceTests
         {
             Consultas++;
             return Task.FromResult(existe);
+        }
+    }
+
+    private sealed class FakeEventoRepositorio(IReadOnlyCollection<EventoClienteDetalhado> eventos) : IEventoRepositorio
+    {
+        public Task<IReadOnlyCollection<EventoClienteDetalhado>> ListarTodosEventosAsync(CancellationToken tokenCancelamento)
+        {
+            return Task.FromResult(eventos);
         }
     }
 

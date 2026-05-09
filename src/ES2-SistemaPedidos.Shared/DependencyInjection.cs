@@ -18,6 +18,7 @@ public static class DependencyInjection
         servicos.AddDbContext<ApplicationDbContext>(opcoes => opcoes.UseNpgsql(stringConexao));
         servicos.AddScoped<IClienteRepositorio, ClienteRepositorio>();
         servicos.AddScoped<IProdutoRepositorio, ProdutoRepositorio>();
+        servicos.AddScoped<IEventoRepositorio, EventoRepositorio>();
 
         return servicos;
     }
