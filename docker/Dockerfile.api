@@ -1,0 +1,21 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+COPY ["src/ES2-SistemaPedidos.Api/ES2-SistemaPedidos.Api.csproj", "src/ES2-SistemaPedidos.Api/"]
+COPY ["src/ES2-SistemaPedidos.Shared/ES2-SistemaPedidos.Shared.csproj", "src/ES2-SistemaPedidos.Shared/"]
+RUN dotnet restore "src/ES2-SistemaPedidos.Api/ES2-SistemaPedidos.Api.csproj"
+
+COPY . .
+RUN dotnet publish "src/ES2-SistemaPedidos.Api/ES2-SistemaPedidos.Api.csproj" \
+    --configuration Release \
+    --output /app/publish \
+    --no-restore
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /app
+
+ENV ASPNETCORE_URLS=http://+:8080
+EXPOSE 8080
+
+COPY --from=build /app/publish .
+ENTRYPOINT ["dotnet", "ES2-SistemaPedidos.Api.dll"]

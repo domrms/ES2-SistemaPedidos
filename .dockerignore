@@ -1,0 +1,11 @@
+.git
+.github
+.idea
+.run
+.vscode
+**/bin
+**/obj
+docker/data
+docker/localstack-data
+Dockerfile*
+README*

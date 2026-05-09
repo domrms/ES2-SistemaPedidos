@@ -1,0 +1,19 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+COPY ["src/ES2-SistemaPedidos.LambdaConsumerSQS/ES2-SistemaPedidos.LambdaConsumerSQS.csproj", "src/ES2-SistemaPedidos.LambdaConsumerSQS/"]
+COPY ["src/ES2-SistemaPedidos.Shared/ES2-SistemaPedidos.Shared.csproj", "src/ES2-SistemaPedidos.Shared/"]
+RUN dotnet restore "src/ES2-SistemaPedidos.LambdaConsumerSQS/ES2-SistemaPedidos.LambdaConsumerSQS.csproj"
+
+COPY . .
+RUN dotnet publish "src/ES2-SistemaPedidos.LambdaConsumerSQS/ES2-SistemaPedidos.LambdaConsumerSQS.csproj" \
+    --configuration Release \
+    --framework net8.0 \
+    --output /var/task \
+    --no-restore
+
+FROM public.ecr.aws/lambda/dotnet:8
+WORKDIR /var/task
+
+COPY --from=build /var/task .
+CMD ["ES2-SistemaPedidos.LambdaConsumerSQS::ES2_SistemaPedidos.LambdaConsumerSQS.Function::FunctionHandler"]
