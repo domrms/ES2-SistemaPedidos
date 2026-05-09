@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Pedidos - ES2</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1>📦 Sistema de Pedidos ES2</h1>
+                <p class="subtitle">Gerenciamento de solicitações e eventos</p>
+            </div>
+            <div class="health-status" id="healthStatus">
+                <span class="status-indicator loading"></span>
+                <span id="healthText">Verificando...</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Section: Health Check -->
+            <section class="card">
+                <h2>🏥 Health Check</h2>
+                <button class="btn btn-primary" onclick="checkHealth()">
+                    Verificar Status
+                </button>
+                <div id="healthResponse" class="response-area"></div>
+            </section>
+
+            <!-- Section: Nova Solicitação -->
+            <section class="card">
+                <h2>➕ Nova Solicitação</h2>
+                <form id="solicitacaoForm" onsubmit="criarSolicitacao(event)">
+                    <div class="form-group">
+                        <label for="clienteId">ID do Cliente:</label>
+                        <input 
+                            type="number" 
+                            id="clienteId" 
+                            name="clienteId" 
+                            min="0"
+                            placeholder="Ex: 1"
+                            required
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label for="produtoId">ID do Produto:</label>
+                        <input 
+                            type="number" 
+                            id="produtoId" 
+                            name="produtoId" 
+                            min="0"
+                            placeholder="Ex: 1"
+                            required
+                        >
+                    </div>
+                    <button type="submit" class="btn btn-success">
+                        Enviar Solicitação
+                    </button>
+                </form>
+                <div id="solicitacaoResponse" class="response-area"></div>
+            </section>
+
+            <!-- Section: Eventos -->
+            <section class="card">
+                <h2>📋 Eventos Registrados</h2>
+                <button class="btn btn-primary" onclick="carregarEventos()">
+                    Carregar Eventos
+                </button>
+                <div id="eventosResponse" class="response-area"></div>
+                <div id="eventosList" class="eventos-container"></div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>API: http://localhost:5000 | Frontend ES2</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

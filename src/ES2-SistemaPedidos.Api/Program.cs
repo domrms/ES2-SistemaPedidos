@@ -19,6 +19,17 @@ construtorAplicacao.Host.UseSerilog((contexto, servicos, configuracaoLog) =>
         .ReadFrom.Configuration(contexto.Configuration);
 });
 
+construtorAplicacao.Services.AddCors(opcoes =>
+{
+    opcoes.AddPolicy("PermitirOrigens", construtor =>
+    {
+        construtor
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader();
+    });
+});
+
 construtorAplicacao.Services
     .AddControllers()
     .AddJsonOptions(opcoes =>
@@ -65,6 +76,7 @@ var aplicacao = construtorAplicacao.Build();
 
 aplicacao.UseSwagger();
 aplicacao.UseSwaggerUI();
+aplicacao.UseCors("PermitirOrigens");
 aplicacao.MapControllers();
 
 aplicacao.Run();
