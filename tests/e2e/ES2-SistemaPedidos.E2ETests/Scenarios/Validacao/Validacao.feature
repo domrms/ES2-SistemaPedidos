@@ -5,13 +5,13 @@
 @validacao
 Scenario: Solicitação com cliente inexistente
   Given que o sistema está pronto
-  When uma solicitação POST é enviada com o cliente 9999 e produto 9999
+  When uma solicitação POST é enviada com o cliente 9998 e produto 9999
   Then a resposta deve ser 400 Bad Request
 
 @validacao
 Scenario: Solicitação com produto inexistente
   Given que o sistema está pronto
-  When uma solicitação POST é enviada com o cliente 9999 e produto 9999
+  When uma solicitação POST é enviada com o cliente 9999 e produto 9998
   Then a resposta deve ser 400 Bad Request
 
 @validacao
@@ -27,10 +27,10 @@ Scenario: Unicidade do ID do evento
   Then os eventoIds retornados devem ser diferentes
 
 @validacao
-Scenario: Consulta de eventos em um sistema sem eventos
+Scenario: Consulta de eventos sem eventos de teste
   Given que a tabela de eventos de teste está limpa
   When uma requisição GET é feita para o endpoint de eventos
-  Then a resposta deve ser 200 OK e conter uma lista de eventos vazia
+  Then a resposta deve ser 200 OK e não conter eventos de teste
 
 @validacao
 Scenario: Correção dos timestamps do evento

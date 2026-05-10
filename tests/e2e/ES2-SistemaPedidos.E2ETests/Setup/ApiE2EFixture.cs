@@ -90,7 +90,7 @@ public class ApiE2EFixture : IAsyncLifetime
         }
 
         // Verifica se produto 9999 existe, se não cria
-        var produtoExiste = await VerificarProdutoExiste(0);
+        var produtoExiste = await VerificarProdutoExiste(9999);
         if (!produtoExiste)
         {
             await InserirProduto(9999, "Produto E2E Test");
@@ -133,7 +133,11 @@ public class ApiE2EFixture : IAsyncLifetime
     {
         if (_dbConnection == null) throw new InvalidOperationException("Conexão não está aberta");
 
-        const string sql = "INSERT INTO clientes (id, nome) VALUES (@id, @nome)";
+        const string sql = """
+            INSERT INTO clientes (id, nome)
+            VALUES (@id, @nome)
+            ON CONFLICT (id) DO UPDATE SET nome = EXCLUDED.nome
+            """;
         using var command = new NpgsqlCommand(sql, _dbConnection);
         command.Parameters.AddWithValue("@id", id);
         command.Parameters.AddWithValue("@nome", nome);
@@ -144,7 +148,11 @@ public class ApiE2EFixture : IAsyncLifetime
     {
         if (_dbConnection == null) throw new InvalidOperationException("Conexão não está aberta");
 
-        const string sql = "INSERT INTO produtos (id, nome) VALUES (@id, @nome)";
+        const string sql = """
+            INSERT INTO produtos (id, nome)
+            VALUES (@id, @nome)
+            ON CONFLICT (id) DO UPDATE SET nome = EXCLUDED.nome
+            """;
         using var command = new NpgsqlCommand(sql, _dbConnection);
         command.Parameters.AddWithValue("@id", id);
         command.Parameters.AddWithValue("@nome", nome);
@@ -178,8 +186,46 @@ public class ApiE2EFixture : IAsyncLifetime
 
     public async Task<List<EventoResponse>?> ObterEventosPorClienteEProdutoAsync(int clienteId, int produtoId)
     {
-        var resposta = await ConsultarEventosAsync<RespostaEventosResponse>();
-        return resposta?.Eventos?.Where(e => e.ClienteId == clienteId && e.ProdutoId == produtoId).ToList();
+        if (_dbConnection == null || _dbConnection.State != System.Data.ConnectionState.Open)
+            throw new InvalidOperationException("Conexão com banco de dados não está aberta");
+
+        const string sql = """
+            SELECT e.id,
+                   e.cliente_id,
+                   e.produto_id,
+                   e.evento_id,
+                   e.data_hora_evento,
+                   e.salvo_em,
+                   c.nome AS nome_cliente,
+                   p.nome AS nome_produto
+              FROM eventos e
+              JOIN clientes c ON c.id = e.cliente_id
+              JOIN produtos p ON p.id = e.produto_id
+             WHERE e.cliente_id = @cliente_id
+               AND e.produto_id = @produto_id
+             ORDER BY e.salvo_em
+            """;
+
+        using var command = new NpgsqlCommand(sql, _dbConnection);
+        command.Parameters.AddWithValue("@cliente_id", clienteId);
+        command.Parameters.AddWithValue("@produto_id", produtoId);
+
+        var eventos = new List<EventoResponse>();
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            eventos.Add(new EventoResponse(
+                reader.GetInt64(reader.GetOrdinal("id")),
+                reader.GetString(reader.GetOrdinal("nome_cliente")),
+                reader.GetString(reader.GetOrdinal("nome_produto")),
+                reader.GetString(reader.GetOrdinal("evento_id")),
+                reader.GetFieldValue<DateTimeOffset>(reader.GetOrdinal("data_hora_evento")),
+                reader.GetFieldValue<DateTimeOffset>(reader.GetOrdinal("salvo_em")),
+                reader.GetInt32(reader.GetOrdinal("cliente_id")),
+                reader.GetInt32(reader.GetOrdinal("produto_id"))));
+        }
+
+        return eventos;
     }
 
     public async Task AguardarEventoSalvoNoBanco(int clienteId, int produtoId, string eventoId, int maxTentativas = 15)

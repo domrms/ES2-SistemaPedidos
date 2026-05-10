@@ -9,48 +9,15 @@ namespace ES2_SistemaPedidos.E2ETests.Scenarios.Validacao;
 public class ValidacaoStepDefinitions
 {
     private readonly ApiE2EFixture _fixture;
+    private readonly TestContext _testContext;
     private HttpResponseMessage? _response;
     private readonly List<RespostaCriarSolicitacaoResponse> _solicitacaoResponses = new();
     private List<EventoResponse>? _eventosFiltrados;
 
-    public ValidacaoStepDefinitions(ApiE2EFixture fixture)
+    public ValidacaoStepDefinitions(ApiE2EFixture fixture, TestContext testContext)
     {
         _fixture = fixture;
-    }
-
-    [Given(@"que o sistema está pronto")]
-    public async Task GivenQueOSistemaEstaPronto()
-    {
-        await _fixture.InitializeAsync();
-    }
-
-    [When(@"uma solicitação POST é enviada com o cliente (.*) e produto (.*)")]
-    public async Task WhenUmaSolicitacaoPostEnviada(int clienteId, int produtoId)
-    {
-        var payload = new { clienteId, produtoId };
-        var json = JsonSerializer.Serialize(payload);
-        var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-        _response = await _fixture.HttpClient.PostAsync("/api/solicitacoes", content);
-    }
-
-    [Then(@"a resposta deve ser (.*) Bad Request")]
-    public void ThenARespostaDeveSerBadRequest(int statusCode)
-    {
-        Assert.NotNull(_response);
-        Assert.Equal(statusCode, (int)_response.StatusCode);
-    }
-
-    [Given(@"que o sistema está pronto e os dados de teste existem")]
-    public async Task GivenQueOSistemaEstaProntoEDadosExistem()
-    {
-        await _fixture.InitializeAsync();
-    }
-
-    [Then(@"a resposta deve ser (.*) Accepted")]
-    public void ThenARespostaDeveSerAccepted(int statusCode)
-    {
-        Assert.NotNull(_response);
-        Assert.Equal(statusCode, (int)_response.StatusCode);
+        _testContext = testContext;
     }
 
     [When(@"duas solicitações são feitas")]
@@ -77,15 +44,16 @@ public class ValidacaoStepDefinitions
         await _fixture.LimparEventosTeste();
     }
 
-    [Then(@"a resposta deve ser (.*) OK e conter uma lista de eventos vazia")]
-    public async Task ThenARespostaDeveSerOkEConterListaVazia(int statusCode)
+    [Then(@"a resposta deve ser (.*) OK e não conter eventos de teste")]
+    public async Task ThenARespostaDeveSerOkENaoConterEventosDeTeste(int statusCode)
     {
-        Assert.NotNull(_response);
-        Assert.Equal(statusCode, (int)_response.StatusCode);
-        var content = await _response.Content.ReadAsStringAsync();
+        Assert.NotNull(_testContext.Response);
+        Assert.Equal(statusCode, (int)_testContext.Response.StatusCode);
+        var content = await _testContext.Response.Content.ReadAsStringAsync();
         var resposta = JsonSerializer.Deserialize<RespostaEventosResponse>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         Assert.NotNull(resposta);
-        Assert.Empty(resposta.Eventos ?? new List<EventoResponse>());
+        Assert.DoesNotContain(resposta.Eventos ?? new List<EventoResponse>(), e =>
+            e.NomeCliente == "Cliente E2E Test" && e.NomeProduto == "Produto E2E Test");
     }
 
     [Given(@"que uma solicitação é criada")]

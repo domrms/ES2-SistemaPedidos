@@ -176,11 +176,13 @@ public class PedidosStepDefinitions
         var json = JsonSerializer.Serialize(payload);
         var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
         _testContext.Response = await _fixture.HttpClient.PostAsync("/api/solicitacoes", content);
+        Assert.Equal(202, (int)_testContext.Response.StatusCode);
         
         var responseContent = await _testContext.Response.Content.ReadAsStringAsync();
         var solicitacaoResponse = JsonSerializer.Deserialize<RespostaCriarSolicitacaoResponse>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        if(solicitacaoResponse != null)
-            _testContext.EventoIds.Add(solicitacaoResponse.EventoId);
+        Assert.NotNull(solicitacaoResponse);
+        _testContext.SolicitacaoResponse = solicitacaoResponse;
+        _testContext.EventoIds.Add(solicitacaoResponse.EventoId);
 
         await WhenOSistemaProcessaMensagem();
     }
