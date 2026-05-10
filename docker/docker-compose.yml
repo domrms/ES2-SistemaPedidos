@@ -56,54 +56,63 @@ services:
     networks:
       - es2-sistema-pedidos
 
+  lambda-consumer-sqs-image:
+    image: es2-sistema-pedidos-lambda-consumer-sqs:latest
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.lambda
+    container_name: es2-sistema-pedidos-lambda-consumer-sqs-image
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["exit 0"]
+    networks:
+      - es2-sistema-pedidos
+
   aws-init:
     image: amazon/aws-cli:latest
     container_name: es2-sistema-pedidos-aws-init
     depends_on:
-      - floci
+      floci:
+        condition: service_started
+      lambda-consumer-sqs-image:
+        condition: service_completed_successfully
     entrypoint: ["/bin/sh", "-c"]
     environment:
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
       AWS_DEFAULT_REGION: us-east-1
       AWS_ENDPOINT_URL: http://floci:4566
-    command:
-      - |
-        until aws sqs list-queues --endpoint-url $$AWS_ENDPOINT_URL >/dev/null 2>&1; do
-          echo 'Aguardando Floci em http://floci:4566...';
-          sleep 2;
-        done;
-
-        FILA_URL=$$(aws sqs create-queue \
-          --queue-name processamento-solicitacoes \
-          --query QueueUrl \
-          --output text \
-          --endpoint-url $$AWS_ENDPOINT_URL);
-
-        DLQ_URL=$$(aws sqs create-queue \
-          --queue-name processamento-solicitacoes-dlq \
-          --query QueueUrl \
-          --output text \
-          --endpoint-url $$AWS_ENDPOINT_URL);
-
-        DLQ_ARN=$$(aws sqs get-queue-attributes \
-          --queue-url $$DLQ_URL \
-          --attribute-names QueueArn \
-          --query Attributes.QueueArn \
-          --output text \
-          --endpoint-url $$AWS_ENDPOINT_URL);
-
-        aws sqs set-queue-attributes \
-          --queue-url $$FILA_URL \
-          --attributes '{"RedrivePolicy":"{\"deadLetterTargetArn\":\"'$$DLQ_ARN'\",\"maxReceiveCount\":5}"}' \
-          --endpoint-url $$AWS_ENDPOINT_URL;
-
-        echo 'Infraestrutura SQS provisionada.';
-        echo "Fila SQS: $$FILA_URL";
-        echo "DLQ SQS: $$DLQ_URL";
+      LAMBDA_IMAGE: es2-sistema-pedidos-lambda-consumer-sqs:latest
+    volumes:
+      - ./aws:/scripts:ro
+    command: ["sh /scripts/init-aws.sh"]
     networks:
       - es2-sistema-pedidos
     restart: "no"
+
+  api:
+    image: es2-sistema-pedidos-api:latest
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: es2-sistema-pedidos-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      aws-init:
+        condition: service_completed_successfully
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS__Regiao: us-east-1
+      AWS__ServiceUrl: http://floci:4566
+      SQS_FILA_URL: http://floci:4566/000000000000/processamento-solicitacoes
+      ConnectionStrings__BancoPedidos: Host=postgres;Port=5432;Database=es2_pedidos;Username=dev;Password=dev
+    networks:
+      - es2-sistema-pedidos
 
 volumes:
   postgres_data:

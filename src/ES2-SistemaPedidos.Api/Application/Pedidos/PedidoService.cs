@@ -9,9 +9,11 @@ namespace ES2_SistemaPedidos.Api.Application.Pedidos;
 public sealed class PedidoService(
     IClienteRepositorio clienteRepositorio,
     IProdutoRepositorio produtoRepositorio,
+    IEventoRepositorio eventoRepositorio,
     IPublicadorEventoSolicitacao publicadorEvento,
     TimeProvider provedorTempo)
 {
+    // ...existing code...
     public async Task<Resultado<RespostaCriarSolicitacao>> CriarSolicitacaoAsync(
         RequisicaoCriarSolicitacao requisicao,
         CancellationToken tokenCancelamento)
@@ -62,6 +64,21 @@ public sealed class PedidoService(
             evento.ProdutoId,
             evento.EventoId,
             evento.DataHoraRequisicao));
+    }
+
+    public async Task<RespostaListarEventos> ListarEventosAsync(CancellationToken tokenCancelamento)
+    {
+        var eventos = await eventoRepositorio.ListarTodosEventosAsync(tokenCancelamento);
+        var eventosDetalhados = eventos.Select(e => new RespostaEventoDetalhado(
+            e.Id,
+            e.NomeCliente,
+            e.NomeProduto,
+            e.EventoId,
+            ObterDataHoraBrasilia(e.DataHoraEvento),
+            ObterDataHoraBrasilia(e.SalvoEm)))
+            .ToList();
+
+        return new RespostaListarEventos(eventosDetalhados.AsReadOnly());
     }
 
     private static string GerarEventoId(DateTimeOffset dataHoraBrasilia)

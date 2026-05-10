@@ -32,6 +32,23 @@ public sealed class PedidosController(PedidoService pedidoService) : ControllerB
             BadRequest);
     }
 
+    [HttpGet("eventos")]
+    public async Task<IActionResult> ListarEventosAsync(CancellationToken tokenCancelamento)
+    {
+        try
+        {
+            var resposta = await pedidoService.ListarEventosAsync(tokenCancelamento);
+            return Ok(resposta);
+        }
+        catch (Exception excecao) when (IsFalhaDependencia(excecao))
+        {
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new RespostaErro("ServicoIndisponivel", "Banco de dados temporariamente indisponivel",
+                    new { tentarNovamenteApos = 30 }));
+        }
+    }
+
     private static bool IsFalhaDependencia(Exception excecao)
     {
         return excecao is DbUpdateException

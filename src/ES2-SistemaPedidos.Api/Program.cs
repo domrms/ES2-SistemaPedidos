@@ -19,6 +19,17 @@ construtorAplicacao.Host.UseSerilog((contexto, servicos, configuracaoLog) =>
         .ReadFrom.Configuration(contexto.Configuration);
 });
 
+construtorAplicacao.Services.AddCors(opcoes =>
+{
+    opcoes.AddPolicy("PermitirOrigens", construtor =>
+    {
+        construtor
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader();
+    });
+});
+
 construtorAplicacao.Services
     .AddControllers()
     .AddJsonOptions(opcoes =>
@@ -43,16 +54,29 @@ construtorAplicacao.Services.AddSingleton<IAmazonSQS>(_ =>
         throw new InvalidOperationException("Regiao AWS nao configurada. Defina AWS:Regiao.");
     }
 
-    return new AmazonSQSClient(new AmazonSQSConfig
+    var urlServico = construtorAplicacao.Configuration["AWS_ENDPOINT_URL"]
+        ?? construtorAplicacao.Configuration["AWS:ServiceUrl"]
+        ?? construtorAplicacao.Configuration["AWS:EndpointUrl"];
+
+    var configuracaoSqs = new AmazonSQSConfig();
+    if (string.IsNullOrWhiteSpace(urlServico))
     {
-        RegionEndpoint = RegionEndpoint.GetBySystemName(nomeRegiao)
-    });
+        configuracaoSqs.RegionEndpoint = RegionEndpoint.GetBySystemName(nomeRegiao);
+    }
+    else
+    {
+        configuracaoSqs.ServiceURL = urlServico;
+        configuracaoSqs.AuthenticationRegion = nomeRegiao;
+    }
+
+    return new AmazonSQSClient(configuracaoSqs);
 });
 
 var aplicacao = construtorAplicacao.Build();
 
 aplicacao.UseSwagger();
 aplicacao.UseSwaggerUI();
+aplicacao.UseCors("PermitirOrigens");
 aplicacao.MapControllers();
 
 aplicacao.Run();
