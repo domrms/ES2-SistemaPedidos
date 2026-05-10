@@ -123,9 +123,7 @@ public class PedidosStepDefinitions
     public async Task ThenEventosDistintosDevemSerSalvos(int quantidade)
     {
         foreach (var eventoId in _testContext.EventoIds)
-        {
             await _fixture.AguardarEventoSalvoNoBanco(TestData.ClienteId, TestData.ProdutoId, eventoId);
-        }
 
         var eventos = await ObterEventosTeste();
         Assert.Equal(quantidade, eventos.Count);

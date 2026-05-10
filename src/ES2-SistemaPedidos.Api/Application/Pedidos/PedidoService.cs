@@ -19,36 +19,28 @@ public sealed class PedidoService(
         CancellationToken tokenCancelamento)
     {
         if (requisicao.ClienteId <= 0)
-        {
             return Resultado<RespostaCriarSolicitacao>.ValidationFailed(new RespostaErroValidacao(
                 "ValidacaoFalhou",
                 "A validacao da solicitacao falhou",
                 [new ErroValidacao("clienteId", "O clienteId deve ser maior que zero.")]));
-        }
 
         if (requisicao.ProdutoId <= 0)
-        {
             return Resultado<RespostaCriarSolicitacao>.ValidationFailed(new RespostaErroValidacao(
                 "ValidacaoFalhou",
                 "A validacao da solicitacao falhou",
                 [new ErroValidacao("produtoId", "O produtoId deve ser maior que zero.")]));
-        }
 
         if (!await clienteRepositorio.ExisteClienteAsync(requisicao.ClienteId, tokenCancelamento))
-        {
             return Resultado<RespostaCriarSolicitacao>.ValidationFailed(new RespostaErroValidacao(
                 "ValidacaoFalhou",
                 "A validacao da solicitacao falhou",
                 [new ErroValidacao("clienteId", $"Cliente {requisicao.ClienteId} nao encontrado.")]));
-        }
 
         if (!await produtoRepositorio.ExisteProdutoAsync(requisicao.ProdutoId, tokenCancelamento))
-        {
             return Resultado<RespostaCriarSolicitacao>.ValidationFailed(new RespostaErroValidacao(
                 "ValidacaoFalhou",
                 "A validacao da solicitacao falhou",
                 [new ErroValidacao("produtoId", $"Produto {requisicao.ProdutoId} nao encontrado.")]));
-        }
 
         var dataHoraBrasilia = ObterDataHoraBrasilia(provedorTempo.GetUtcNow());
         var evento = new EventoSolicitacaoCliente(
@@ -70,12 +62,12 @@ public sealed class PedidoService(
     {
         var eventos = await eventoRepositorio.ListarTodosEventosAsync(tokenCancelamento);
         var eventosDetalhados = eventos.Select(e => new RespostaEventoDetalhado(
-            e.Id,
-            e.NomeCliente,
-            e.NomeProduto,
-            e.EventoId,
-            ObterDataHoraBrasilia(e.DataHoraEvento),
-            ObterDataHoraBrasilia(e.SalvoEm)))
+                e.Id,
+                e.NomeCliente,
+                e.NomeProduto,
+                e.EventoId,
+                ObterDataHoraBrasilia(e.DataHoraEvento),
+                ObterDataHoraBrasilia(e.SalvoEm)))
             .ToList();
 
         return new RespostaListarEventos(eventosDetalhados.AsReadOnly());
@@ -83,7 +75,8 @@ public sealed class PedidoService(
 
     private static string GerarEventoId(DateTimeOffset dataHoraBrasilia)
     {
-        var numerosAleatorios = RandomNumberGenerator.GetInt32(0, 100_000_000).ToString("D8", CultureInfo.InvariantCulture);
+        var numerosAleatorios =
+            RandomNumberGenerator.GetInt32(0, 100_000_000).ToString("D8", CultureInfo.InvariantCulture);
         return $"ES2-{numerosAleatorios}-{dataHoraBrasilia:HHmmss}";
     }
 

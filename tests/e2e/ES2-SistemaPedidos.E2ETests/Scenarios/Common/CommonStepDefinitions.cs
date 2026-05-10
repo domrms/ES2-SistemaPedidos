@@ -55,9 +55,7 @@ public class CommonStepDefinitions
                 JsonDefaults.CaseInsensitive);
 
             if (_testContext.SolicitacaoResponse?.EventoId != null)
-            {
                 _testContext.EventoIds.Add(_testContext.SolicitacaoResponse.EventoId);
-            }
         }
     }
 

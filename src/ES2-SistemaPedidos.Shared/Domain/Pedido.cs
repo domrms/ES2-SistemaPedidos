@@ -23,7 +23,8 @@ public sealed class EventoCliente
     {
     }
 
-    public EventoCliente(long id, int clienteId, int produtoId, string eventoId, DateTimeOffset dataHoraEvento, DateTimeOffset salvoEm)
+    public EventoCliente(long id, int clienteId, int produtoId, string eventoId, DateTimeOffset dataHoraEvento,
+        DateTimeOffset salvoEm)
     {
         Id = id;
         ClienteId = clienteId;

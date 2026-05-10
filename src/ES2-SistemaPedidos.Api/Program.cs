@@ -32,10 +32,7 @@ construtorAplicacao.Services.AddCors(opcoes =>
 
 construtorAplicacao.Services
     .AddControllers()
-    .AddJsonOptions(opcoes =>
-{
-    opcoes.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-});
+    .AddJsonOptions(opcoes => { opcoes.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()); });
 
 construtorAplicacao.Services.AddEndpointsApiExplorer();
 construtorAplicacao.Services.AddSwaggerGen();
@@ -46,17 +43,15 @@ construtorAplicacao.Services.AddSingleton<IPublicadorEventoSolicitacao, PedidoPu
 construtorAplicacao.Services.AddSingleton<IAmazonSQS>(_ =>
 {
     var nomeRegiao = construtorAplicacao.Configuration["AWS_REGIAO"]
-        ?? construtorAplicacao.Configuration["AWS_REGION"]
-        ?? construtorAplicacao.Configuration["AWS:Regiao"]
-        ?? construtorAplicacao.Configuration["AWS:Region"];
+                     ?? construtorAplicacao.Configuration["AWS_REGION"]
+                     ?? construtorAplicacao.Configuration["AWS:Regiao"]
+                     ?? construtorAplicacao.Configuration["AWS:Region"];
     if (string.IsNullOrWhiteSpace(nomeRegiao))
-    {
         throw new InvalidOperationException("Regiao AWS nao configurada. Defina AWS:Regiao.");
-    }
 
     var urlServico = construtorAplicacao.Configuration["AWS_ENDPOINT_URL"]
-        ?? construtorAplicacao.Configuration["AWS:ServiceUrl"]
-        ?? construtorAplicacao.Configuration["AWS:EndpointUrl"];
+                     ?? construtorAplicacao.Configuration["AWS:ServiceUrl"]
+                     ?? construtorAplicacao.Configuration["AWS:EndpointUrl"];
 
     var configuracaoSqs = new AmazonSQSConfig();
     if (string.IsNullOrWhiteSpace(urlServico))

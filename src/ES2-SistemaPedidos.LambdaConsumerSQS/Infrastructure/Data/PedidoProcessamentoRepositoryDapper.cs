@@ -9,28 +9,29 @@ namespace ES2_SistemaPedidos.LambdaConsumerSQS.Infrastructure.Data;
 public sealed class PedidoProcessamentoRepositoryDapper(IConfiguration configuracao) : IPedidoProcessamentoRepository
 {
     private readonly string _stringConexao = configuracao.GetConnectionString("BancoPedidos")
-        ?? configuracao["DATABASE_URL"]
-        ?? throw new InvalidOperationException("String de conexao nao configurada. Defina ConnectionStrings:BancoPedidos ou DATABASE_URL.");
+                                             ?? configuracao["DATABASE_URL"]
+                                             ?? throw new InvalidOperationException(
+                                                 "String de conexao nao configurada. Defina ConnectionStrings:BancoPedidos ou DATABASE_URL.");
 
     public async Task RegistrarEventoAsync(EventoProcessamento evento, CancellationToken tokenCancelamento)
     {
         const string sql = """
-            INSERT INTO eventos (
-                cliente_id,
-                produto_id,
-                evento_id,
-                data_hora_evento,
-                salvo_em
-            )
-            VALUES (
-                @ClienteId,
-                @ProdutoId,
-                @EventoId,
-                @DataHoraEvento,
-                @SalvoEm
-            )
-            ON CONFLICT (evento_id) DO NOTHING;
-            """;
+                           INSERT INTO eventos (
+                               cliente_id,
+                               produto_id,
+                               evento_id,
+                               data_hora_evento,
+                               salvo_em
+                           )
+                           VALUES (
+                               @ClienteId,
+                               @ProdutoId,
+                               @EventoId,
+                               @DataHoraEvento,
+                               @SalvoEm
+                           )
+                           ON CONFLICT (evento_id) DO NOTHING;
+                           """;
 
         var parametros = evento with
         {

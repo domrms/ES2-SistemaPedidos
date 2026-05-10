@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using ES2_SistemaPedidos.E2ETests.Setup;
 using ES2_SistemaPedidos.E2ETests.Support;
@@ -10,10 +11,10 @@ namespace ES2_SistemaPedidos.E2ETests.Scenarios.Validacao;
 public class ValidacaoStepDefinitions
 {
     private readonly ApiE2EFixture _fixture;
-    private readonly TestContext _testContext;
-    private HttpResponseMessage? _response;
     private readonly List<RespostaCriarSolicitacaoResponse> _solicitacaoResponses = new();
+    private readonly TestContext _testContext;
     private List<EventoResponse>? _eventosFiltrados;
+    private HttpResponseMessage? _response;
 
     public ValidacaoStepDefinitions(ApiE2EFixture fixture, TestContext testContext)
     {
@@ -94,7 +95,7 @@ public class ValidacaoStepDefinitions
     {
         var content = new StringContent(
             "{\"clienteId\": \"abc\", \"produtoId\": \"xyz\"}",
-            System.Text.Encoding.UTF8,
+            Encoding.UTF8,
             "application/json");
 
         _response = await _fixture.HttpClient.PostAsync(ApiRoutes.Solicitacoes, content);
@@ -110,7 +111,7 @@ public class ValidacaoStepDefinitions
     [When(@"uma solicitação POST é enviada com um JSON vazio")]
     public async Task WhenUmaSolicitacaoPostEnviadaComJsonVazio()
     {
-        var content = new StringContent("{}", System.Text.Encoding.UTF8, "application/json");
+        var content = new StringContent("{}", Encoding.UTF8, "application/json");
         _response = await _fixture.HttpClient.PostAsync(ApiRoutes.Solicitacoes, content);
     }
 
@@ -119,7 +120,7 @@ public class ValidacaoStepDefinitions
     {
         var content = new StringContent(
             $"clienteId={TestData.ClienteId}&produtoId={TestData.ProdutoId}",
-            System.Text.Encoding.UTF8,
+            Encoding.UTF8,
             "application/x-www-form-urlencoded");
 
         _response = await _fixture.HttpClient.PostAsync(ApiRoutes.Solicitacoes, content);

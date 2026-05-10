@@ -17,15 +17,14 @@ public sealed class PedidoPublisherEventSqs(
     public async Task PublicarAsync(EventoSolicitacaoCliente evento, CancellationToken tokenCancelamento)
     {
         var filaUrl = configuracao["SQS_FILA_URL"]
-            ?? configuracao["SQS_QUEUE_URL"]
-            ?? configuracao["AWS:FilaSolicitacoesUrl"]
-            ?? configuracao["AWS:FilaPedidosUrl"]
-            ?? configuracao["AWS:SqsQueueUrl"];
+                      ?? configuracao["SQS_QUEUE_URL"]
+                      ?? configuracao["AWS:FilaSolicitacoesUrl"]
+                      ?? configuracao["AWS:FilaPedidosUrl"]
+                      ?? configuracao["AWS:SqsQueueUrl"];
 
         if (string.IsNullOrWhiteSpace(filaUrl))
-        {
-            throw new InvalidOperationException("URL da fila SQS nao configurada. Defina SQS_FILA_URL ou AWS:FilaSolicitacoesUrl.");
-        }
+            throw new InvalidOperationException(
+                "URL da fila SQS nao configurada. Defina SQS_FILA_URL ou AWS:FilaSolicitacoesUrl.");
 
         var mensagem = JsonSerializer.Serialize(evento, OpcoesJson);
         registrador.LogInformation("Payload enviado para SQS: {PayloadSqs}", mensagem);
@@ -36,7 +35,7 @@ public sealed class PedidoPublisherEventSqs(
             MessageBody = mensagem,
             MessageAttributes = new Dictionary<string, MessageAttributeValue>
             {
-                ["tipoEvento"] = new MessageAttributeValue
+                ["tipoEvento"] = new()
                 {
                     DataType = "String",
                     StringValue = "SolicitacaoCliente"
