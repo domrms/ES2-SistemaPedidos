@@ -22,3 +22,26 @@ public sealed class ProdutoRepositorio(ApplicationDbContext contextoBanco) : IPr
             .AnyAsync(produto => produto.Id == produtoId, tokenCancelamento);
     }
 }
+
+public sealed class EventoRepositorio(ApplicationDbContext contextoBanco) : IEventoRepositorio
+{
+    public async Task<IReadOnlyCollection<EventoClienteDetalhado>> ListarTodosEventosAsync(
+        CancellationToken tokenCancelamento)
+    {
+        var eventos = await contextoBanco.Eventos
+            .Include(e => e.Cliente)
+            .Include(e => e.Produto)
+            .AsNoTracking()
+            .OrderBy(e => e.SalvoEm)
+            .Select(e => new EventoClienteDetalhado(
+                e.Id,
+                e.Cliente!.Nome,
+                e.Produto!.Nome,
+                e.EventoId,
+                e.DataHoraEvento,
+                e.SalvoEm))
+            .ToListAsync(tokenCancelamento);
+
+        return eventos.AsReadOnly();
+    }
+}

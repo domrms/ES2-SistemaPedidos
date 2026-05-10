@@ -1,9 +1,9 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ES2-SistemaPedidos.Api", "src\ES2-SistemaPedidos.Api\ES2-SistemaPedidos.Api.csproj", "{D88C7D6A-BD93-41DD-AE93-C73E17D90F4F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ES2-SistemaPedidos.Worker", "src\ES2-SistemaPedidos.Worker\ES2-SistemaPedidos.Worker.csproj", "{7582EB88-967A-4168-943B-2DE3A112723C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ES2-SistemaPedidos.LambdaConsumerSQS", "src\ES2-SistemaPedidos.LambdaConsumerSQS\ES2-SistemaPedidos.LambdaConsumerSQS.csproj", "{7582EB88-967A-4168-943B-2DE3A112723C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ES2-SistemaPedidos.Shared", "src\ES2-SistemaPedidos.Shared\ES2-SistemaPedidos.Shared.csproj", "{494FAA11-CA1D-4AA5-BE59-615C37001CD1}"
 EndProject
@@ -15,7 +15,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "unit", "unit", "{F33DA11D-B
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ES2-SistemaPedidos.Api.UnitTests", "tests\unit\ES2-SistemaPedidos.Api.UnitTests\ES2-SistemaPedidos.Api.UnitTests.csproj", "{2EEFDAD2-CBF4-4210-AFD0-1BBB3268DFFC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ES2-SistemaPedidos.Worker.UnitTests", "tests\unit\ES2-SistemaPedidos.Worker.UnitTests\ES2-SistemaPedidos.Worker.UnitTests.csproj", "{D6D926B2-29C2-43D8-ACF8-E0D0E3741F1C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ES2-SistemaPedidos.LambdaConsumerSQS.UnitTests", "tests\unit\ES2-SistemaPedidos.LambdaConsumerSQS.UnitTests\ES2-SistemaPedidos.LambdaConsumerSQS.UnitTests.csproj", "{D6D926B2-29C2-43D8-ACF8-E0D0E3741F1C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "e2e", "e2e", "{EB89A152-3240-458B-919C-1A352607DFD2}"
 EndProject

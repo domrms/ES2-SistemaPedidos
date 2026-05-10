@@ -20,7 +20,8 @@ public sealed class DateTimeConsoleFormatterTests
 
         formatter.Format(logEvent, output);
 
-        Assert.Equal("[2026-05-03 12:04:05.123 -03:00 INF] Pedido 42 processado" + Environment.NewLine, output.ToString());
+        Assert.Equal("[2026-05-03 12:04:05.123 -03:00 INF] Pedido 42 processado" + Environment.NewLine,
+            output.ToString());
     }
 
     [Fact]

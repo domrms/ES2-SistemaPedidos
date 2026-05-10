@@ -1,7 +1,0 @@
-<component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Api + Worker" type="CompoundRunConfigurationType">
-    <toRun name="ES2-SistemaPedidos.Api" type="DotNetProject" />
-    <toRun name="ES2-SistemaPedidos.Worker" type="DotNetProject" />
-    <method v="2" />
-  </configuration>
-</component>

@@ -1,5 +1,4 @@
 using System.Text.RegularExpressions;
-using ES2_SistemaPedidos.Api;
 using ES2_SistemaPedidos.Api.Application.Abstractions;
 using ES2_SistemaPedidos.Api.Application.Pedidos;
 using ES2_SistemaPedidos.Shared.Contracts;
@@ -17,7 +16,8 @@ public sealed partial class PedidoServiceTests
         var fixture = new Fixture();
         var servico = fixture.CriarServico();
 
-        var resultado = await servico.CriarSolicitacaoAsync(new RequisicaoCriarSolicitacao(0, 10), CancellationToken.None);
+        var resultado =
+            await servico.CriarSolicitacaoAsync(new RequisicaoCriarSolicitacao(0, 10), CancellationToken.None);
 
         var erro = ExtrairErro(resultado);
         Assert.Equal("ValidacaoFalhou", erro.Erro);
@@ -37,7 +37,8 @@ public sealed partial class PedidoServiceTests
         var fixture = new Fixture();
         var servico = fixture.CriarServico();
 
-        var resultado = await servico.CriarSolicitacaoAsync(new RequisicaoCriarSolicitacao(10, -1), CancellationToken.None);
+        var resultado =
+            await servico.CriarSolicitacaoAsync(new RequisicaoCriarSolicitacao(10, -1), CancellationToken.None);
 
         var erro = ExtrairErro(resultado);
         Assert.Collection(erro.Detalhes, detalhe =>
@@ -56,7 +57,8 @@ public sealed partial class PedidoServiceTests
         var fixture = new Fixture { ClienteExiste = false };
         var servico = fixture.CriarServico();
 
-        var resultado = await servico.CriarSolicitacaoAsync(new RequisicaoCriarSolicitacao(99, 10), CancellationToken.None);
+        var resultado =
+            await servico.CriarSolicitacaoAsync(new RequisicaoCriarSolicitacao(99, 10), CancellationToken.None);
 
         var erro = ExtrairErro(resultado);
         Assert.Collection(erro.Detalhes, detalhe =>
@@ -75,7 +77,8 @@ public sealed partial class PedidoServiceTests
         var fixture = new Fixture { ProdutoExiste = false };
         var servico = fixture.CriarServico();
 
-        var resultado = await servico.CriarSolicitacaoAsync(new RequisicaoCriarSolicitacao(20, 88), CancellationToken.None);
+        var resultado =
+            await servico.CriarSolicitacaoAsync(new RequisicaoCriarSolicitacao(20, 88), CancellationToken.None);
 
         var erro = ExtrairErro(resultado);
         Assert.Collection(erro.Detalhes, detalhe =>
@@ -94,7 +97,8 @@ public sealed partial class PedidoServiceTests
         var fixture = new Fixture();
         var servico = fixture.CriarServico();
 
-        var resultado = await servico.CriarSolicitacaoAsync(new RequisicaoCriarSolicitacao(7, 11), CancellationToken.None);
+        var resultado =
+            await servico.CriarSolicitacaoAsync(new RequisicaoCriarSolicitacao(7, 11), CancellationToken.None);
 
         var resposta = ExtrairSucesso(resultado);
         Assert.Equal(7, resposta.ClienteId);
@@ -107,6 +111,56 @@ public sealed partial class PedidoServiceTests
         Assert.Equal(resposta.ProdutoId, evento.ProdutoId);
         Assert.Equal(resposta.EventoId, evento.EventoId);
         Assert.Equal(resposta.DataHoraRequisicao, evento.DataHoraRequisicao);
+    }
+
+    [Fact]
+    public async Task ListarEventosAsync_quando_nao_ha_eventos_retorna_lista_vazia()
+    {
+        var fixture = new Fixture { Eventos = [] };
+        var servico = fixture.CriarServico();
+
+        var resposta = await servico.ListarEventosAsync(CancellationToken.None);
+
+        Assert.Empty(resposta.Eventos);
+    }
+
+    [Fact]
+    public async Task ListarEventosAsync_quando_ha_eventos_retorna_lista_com_nomes()
+    {
+        var eventoDetalhado1 = new EventoClienteDetalhado(
+            1,
+            "Cliente A",
+            "Produto X",
+            "ES2-12345678-100000",
+            new DateTimeOffset(2026, 5, 3, 10, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2026, 5, 3, 10, 0, 5, TimeSpan.Zero));
+
+        var eventoDetalhado2 = new EventoClienteDetalhado(
+            2,
+            "Cliente B",
+            "Produto Y",
+            "ES2-87654321-110000",
+            new DateTimeOffset(2026, 5, 3, 11, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2026, 5, 3, 11, 0, 5, TimeSpan.Zero));
+
+        var fixture = new Fixture { Eventos = [eventoDetalhado1, eventoDetalhado2] };
+        var servico = fixture.CriarServico();
+
+        var resposta = await servico.ListarEventosAsync(CancellationToken.None);
+
+        Assert.Equal(2, resposta.Eventos.Count);
+
+        var primeiro = resposta.Eventos.First();
+        Assert.Equal(1, primeiro.Id);
+        Assert.Equal("Cliente A", primeiro.NomeCliente);
+        Assert.Equal("Produto X", primeiro.NomeProduto);
+        Assert.Equal("ES2-12345678-100000", primeiro.EventoId);
+
+        var segundo = resposta.Eventos.Last();
+        Assert.Equal(2, segundo.Id);
+        Assert.Equal("Cliente B", segundo.NomeCliente);
+        Assert.Equal("Produto Y", segundo.NomeProduto);
+        Assert.Equal("ES2-87654321-110000", segundo.EventoId);
     }
 
     private static RespostaErroValidacao ExtrairErro(Resultado<RespostaCriarSolicitacao> resultado)
@@ -128,9 +182,13 @@ public sealed partial class PedidoServiceTests
 
         public bool ProdutoExiste { get; init; } = true;
 
+        public IReadOnlyCollection<EventoClienteDetalhado> Eventos { get; init; } = [];
+
         public FakeClienteRepositorio Clientes { get; private set; } = null!;
 
         public FakeProdutoRepositorio Produtos { get; private set; } = null!;
+
+        public FakeEventoRepositorio EventoRepositorio { get; private set; } = null!;
 
         public FakePublicadorEventoSolicitacao Publicador { get; } = new();
 
@@ -138,8 +196,9 @@ public sealed partial class PedidoServiceTests
         {
             Clientes = new FakeClienteRepositorio(ClienteExiste);
             Produtos = new FakeProdutoRepositorio(ProdutoExiste);
+            EventoRepositorio = new FakeEventoRepositorio(Eventos);
 
-            return new PedidoService(Clientes, Produtos, Publicador, new FakeTimeProvider(AgoraUtc));
+            return new PedidoService(Clientes, Produtos, EventoRepositorio, Publicador, new FakeTimeProvider(AgoraUtc));
         }
     }
 
@@ -165,6 +224,15 @@ public sealed partial class PedidoServiceTests
         }
     }
 
+    private sealed class FakeEventoRepositorio(IReadOnlyCollection<EventoClienteDetalhado> eventos) : IEventoRepositorio
+    {
+        public Task<IReadOnlyCollection<EventoClienteDetalhado>> ListarTodosEventosAsync(
+            CancellationToken tokenCancelamento)
+        {
+            return Task.FromResult(eventos);
+        }
+    }
+
     private sealed class FakePublicadorEventoSolicitacao : IPublicadorEventoSolicitacao
     {
         public List<EventoSolicitacaoCliente> Eventos { get; } = [];
@@ -178,6 +246,9 @@ public sealed partial class PedidoServiceTests
 
     private sealed class FakeTimeProvider(DateTimeOffset agoraUtc) : TimeProvider
     {
-        public override DateTimeOffset GetUtcNow() => agoraUtc;
+        public override DateTimeOffset GetUtcNow()
+        {
+            return agoraUtc;
+        }
     }
 }

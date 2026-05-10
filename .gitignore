@@ -448,3 +448,4 @@ Desktop.ini
 .DS_Store
 
 .idea
+*.feature.cs
