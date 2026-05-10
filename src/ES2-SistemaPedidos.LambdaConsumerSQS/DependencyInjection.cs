@@ -8,7 +8,8 @@ namespace ES2_SistemaPedidos.LambdaConsumerSQS;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddProcessamentoPedidos(this IServiceCollection servicos, IConfiguration configuracao)
+    public static IServiceCollection AddProcessamentoPedidos(this IServiceCollection servicos,
+        IConfiguration configuracao)
     {
         servicos.AddSingleton(TimeProvider.System);
         servicos.AddScoped<IPedidoProcessamentoRepository, PedidoProcessamentoRepositoryDapper>();

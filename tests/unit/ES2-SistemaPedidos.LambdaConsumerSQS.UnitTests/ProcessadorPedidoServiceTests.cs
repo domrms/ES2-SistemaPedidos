@@ -1,8 +1,8 @@
 using System.Text.Json;
-using ES2_SistemaPedidos.Shared.Contracts;
 using ES2_SistemaPedidos.LambdaConsumerSQS.Application.Abstractions;
 using ES2_SistemaPedidos.LambdaConsumerSQS.Application.Models;
 using ES2_SistemaPedidos.LambdaConsumerSQS.Application.Services;
+using ES2_SistemaPedidos.Shared.Contracts;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace ES2_SistemaPedidos.LambdaConsumerSQS.UnitTests;
@@ -35,8 +35,10 @@ public sealed class ProcessadorPedidoServiceTests
     }
 
     [Theory]
-    [InlineData("""{"clienteId":0,"produtoId":1,"eventoId":"ES2-12345678-123000","dataHoraRequisicao":"2026-05-03T12:30:00-03:00"}""")]
-    [InlineData("""{"clienteId":1,"produtoId":0,"eventoId":"ES2-12345678-123000","dataHoraRequisicao":"2026-05-03T12:30:00-03:00"}""")]
+    [InlineData(
+        """{"clienteId":0,"produtoId":1,"eventoId":"ES2-12345678-123000","dataHoraRequisicao":"2026-05-03T12:30:00-03:00"}""")]
+    [InlineData(
+        """{"clienteId":1,"produtoId":0,"eventoId":"ES2-12345678-123000","dataHoraRequisicao":"2026-05-03T12:30:00-03:00"}""")]
     [InlineData("""{"clienteId":1,"produtoId":2,"eventoId":"","dataHoraRequisicao":"2026-05-03T12:30:00-03:00"}""")]
     [InlineData("""{"clienteId":1,"produtoId":2,"eventoId":"   ","dataHoraRequisicao":"2026-05-03T12:30:00-03:00"}""")]
     public async Task ProcessMessageAsync_quando_payload_invalido_retorna_false_sem_registrar_evento(string corpo)
@@ -83,6 +85,9 @@ public sealed class ProcessadorPedidoServiceTests
 
     private sealed class FakeTimeProvider(DateTimeOffset agoraUtc) : TimeProvider
     {
-        public override DateTimeOffset GetUtcNow() => agoraUtc;
+        public override DateTimeOffset GetUtcNow()
+        {
+            return agoraUtc;
+        }
     }
 }

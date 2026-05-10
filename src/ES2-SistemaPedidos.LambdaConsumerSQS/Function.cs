@@ -1,13 +1,14 @@
 using Amazon.Lambda.Core;
+using Amazon.Lambda.Serialization.SystemTextJson;
 using Amazon.Lambda.SQSEvents;
-using ES2_SistemaPedidos.Shared.Logging;
 using ES2_SistemaPedidos.LambdaConsumerSQS.Application.Services;
+using ES2_SistemaPedidos.Shared.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
 
-[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+[assembly: LambdaSerializer(typeof(DefaultLambdaJsonSerializer))]
 
 namespace ES2_SistemaPedidos.LambdaConsumerSQS;
 
@@ -33,7 +34,6 @@ public sealed class Function
         var falhas = new List<SQSBatchResponse.BatchItemFailure>();
 
         foreach (var mensagem in eventoSqs.Records)
-        {
             try
             {
                 var processada = await processador.ProcessMessageAsync(
@@ -43,7 +43,8 @@ public sealed class Function
 
                 if (!processada)
                 {
-                    registrador.LogWarning("Mensagem {MensagemId} possui payload invalido e sera marcada como falha", mensagem.MessageId);
+                    registrador.LogWarning("Mensagem {MensagemId} possui payload invalido e sera marcada como falha",
+                        mensagem.MessageId);
                     falhas.Add(new SQSBatchResponse.BatchItemFailure
                     {
                         ItemIdentifier = mensagem.MessageId
@@ -52,13 +53,13 @@ public sealed class Function
             }
             catch (Exception excecao)
             {
-                registrador.LogError(excecao, "Erro ao processar mensagem {MensagemId}; a mensagem sera marcada como falha", mensagem.MessageId);
+                registrador.LogError(excecao,
+                    "Erro ao processar mensagem {MensagemId}; a mensagem sera marcada como falha", mensagem.MessageId);
                 falhas.Add(new SQSBatchResponse.BatchItemFailure
                 {
                     ItemIdentifier = mensagem.MessageId
                 });
             }
-        }
 
         return new SQSBatchResponse
         {
@@ -69,16 +70,16 @@ public sealed class Function
     private static IServiceProvider CriarServiceProvider()
     {
         var ambiente = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
-            ?? Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
-            ?? "Production";
+                       ?? Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
+                       ?? "Production";
 
         var diretorioAssembly = Path.GetDirectoryName(typeof(Function).Assembly.Location)
-            ?? AppContext.BaseDirectory;
+                                ?? AppContext.BaseDirectory;
 
         var configuracao = new ConfigurationBuilder()
             .SetBasePath(diretorioAssembly)
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
-            .AddJsonFile($"appsettings.{ambiente}.json", optional: true, reloadOnChange: false)
+            .AddJsonFile("appsettings.json", false, false)
+            .AddJsonFile($"appsettings.{ambiente}.json", true, false)
             .AddEnvironmentVariables()
             .Build();
 
@@ -89,7 +90,7 @@ public sealed class Function
 
         var servicos = new ServiceCollection();
         servicos.AddSingleton<IConfiguration>(configuracao);
-        servicos.AddLogging(builder => builder.AddSerilog(Log.Logger, dispose: false));
+        servicos.AddLogging(builder => builder.AddSerilog(Log.Logger, false));
         servicos.AddProcessamentoPedidos(configuracao);
 
         return servicos.BuildServiceProvider();

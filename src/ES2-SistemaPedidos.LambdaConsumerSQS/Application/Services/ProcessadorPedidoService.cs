@@ -1,7 +1,7 @@
 using System.Text.Json;
-using ES2_SistemaPedidos.Shared.Contracts;
 using ES2_SistemaPedidos.LambdaConsumerSQS.Application.Abstractions;
 using ES2_SistemaPedidos.LambdaConsumerSQS.Application.Models;
+using ES2_SistemaPedidos.Shared.Contracts;
 using Microsoft.Extensions.Logging;
 
 namespace ES2_SistemaPedidos.LambdaConsumerSQS.Application.Services;
@@ -13,7 +13,8 @@ public sealed class ProcessadorPedidoService(
 {
     private static readonly JsonSerializerOptions OpcoesJson = new(JsonSerializerDefaults.Web);
 
-    public async Task<bool> ProcessMessageAsync(string mensagemSqsId, string corpoMensagem, CancellationToken tokenCancelamento)
+    public async Task<bool> ProcessMessageAsync(string mensagemSqsId, string corpoMensagem,
+        CancellationToken tokenCancelamento)
     {
         var evento = JsonSerializer.Deserialize<EventoSolicitacaoCliente>(corpoMensagem, OpcoesJson);
         if (evento is null

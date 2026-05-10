@@ -25,7 +25,8 @@ public sealed class ProdutoRepositorio(ApplicationDbContext contextoBanco) : IPr
 
 public sealed class EventoRepositorio(ApplicationDbContext contextoBanco) : IEventoRepositorio
 {
-    public async Task<IReadOnlyCollection<EventoClienteDetalhado>> ListarTodosEventosAsync(CancellationToken tokenCancelamento)
+    public async Task<IReadOnlyCollection<EventoClienteDetalhado>> ListarTodosEventosAsync(
+        CancellationToken tokenCancelamento)
     {
         var eventos = await contextoBanco.Eventos
             .Include(e => e.Cliente)
@@ -44,4 +45,3 @@ public sealed class EventoRepositorio(ApplicationDbContext contextoBanco) : IEve
         return eventos.AsReadOnly();
     }
 }
-

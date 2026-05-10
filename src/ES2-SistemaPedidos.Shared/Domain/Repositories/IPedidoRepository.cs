@@ -22,4 +22,3 @@ public sealed record EventoClienteDetalhado(
     string EventoId,
     DateTimeOffset DataHoraEvento,
     DateTimeOffset SalvoEm);
-
