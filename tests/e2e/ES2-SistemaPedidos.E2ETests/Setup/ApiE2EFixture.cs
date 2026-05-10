@@ -1,13 +1,10 @@
-﻿using System.Text.Json;
-using System.Text.Json.Serialization;
+using System.Text.Json;
+using ES2_SistemaPedidos.E2ETests.Support;
 using Npgsql;
 using Xunit;
 
 namespace ES2_SistemaPedidos.E2ETests.Setup;
 
-/// <summary>
-/// Fixture para configurar os testes E2E com acesso à API e banco de dados
-/// </summary>
 public class ApiE2EFixture : IAsyncLifetime
 {
     private readonly string _connectionString;
@@ -17,7 +14,7 @@ public class ApiE2EFixture : IAsyncLifetime
     public ApiE2EFixture()
     {
         var apiBaseUrl = Environment.GetEnvironmentVariable("API_BASE_URL") ?? "http://localhost:8080";
-        _connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") 
+        _connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
             ?? "Host=localhost;Port=5432;Database=es2_pedidos;Username=dev;Password=dev";
 
         HttpClient = new HttpClient { BaseAddress = new Uri(apiBaseUrl), Timeout = TimeSpan.FromSeconds(30) };
@@ -25,14 +22,14 @@ public class ApiE2EFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        // Aguarda a API estar disponível
         await AguardarApiDisponivel();
 
-        // Conecta ao banco de dados
-        _dbConnection = new NpgsqlConnection(_connectionString);
-        await _dbConnection.OpenAsync();
+        if (_dbConnection == null || _dbConnection.State != System.Data.ConnectionState.Open)
+        {
+            _dbConnection = new NpgsqlConnection(_connectionString);
+            await _dbConnection.OpenAsync();
+        }
 
-        // Prepara os dados de teste (insere cliente 9999 e produto 9999)
         await PrepararDadosTeste();
     }
 
@@ -47,144 +44,48 @@ public class ApiE2EFixture : IAsyncLifetime
         HttpClient.Dispose();
     }
 
-    private async Task AguardarApiDisponivel()
-    {
-        int tentativas = 0;
-        const int maxTentativas = 30;
-
-        while (tentativas < maxTentativas)
-        {
-            try
-            {
-                var response = await HttpClient.GetAsync("/api/healthcheck");
-                if (response.IsSuccessStatusCode)
-                {
-                    return;
-                }
-            }
-            catch
-            {
-                // Continua tentando
-            }
-
-            tentativas++;
-            await Task.Delay(1000);
-        }
-
-        throw new InvalidOperationException("API não respondeu após 30 segundos");
-    }
-
-    private async Task PrepararDadosTeste()
-    {
-        if (_dbConnection == null || _dbConnection.State != System.Data.ConnectionState.Open)
-            throw new InvalidOperationException("Conexão com banco de dados não está aberta");
-
-        // Limpa eventos anteriores com cliente_id=9999 e produto_id=9999
-        await LimparEventosTeste();
-
-        // Verifica se cliente 9999 existe, se não cria
-        var clienteExiste = await VerificarClienteExiste(9999);
-        if (!clienteExiste)
-        {
-            await InserirCliente(9999, "Cliente E2E Test");
-        }
-
-        // Verifica se produto 9999 existe, se não cria
-        var produtoExiste = await VerificarProdutoExiste(9999);
-        if (!produtoExiste)
-        {
-            await InserirProduto(9999, "Produto E2E Test");
-        }
-    }
-
     public async Task LimparEventosTeste()
     {
         if (_dbConnection == null || _dbConnection.State != System.Data.ConnectionState.Open)
             throw new InvalidOperationException("Conexão com banco de dados não está aberta");
 
-        const string sql = "DELETE FROM eventos WHERE cliente_id = 9999 AND produto_id = 9999";
+        const string sql = "DELETE FROM eventos WHERE cliente_id = @cliente_id AND produto_id = @produto_id";
         using var command = new NpgsqlCommand(sql, _dbConnection);
-        await command.ExecuteNonQueryAsync();
-    }
-
-    private async Task<bool> VerificarClienteExiste(int clienteId)
-    {
-        if (_dbConnection == null) throw new InvalidOperationException("Conexão não está aberta");
-
-        const string sql = "SELECT COUNT(*) FROM clientes WHERE id = @id";
-        using var command = new NpgsqlCommand(sql, _dbConnection);
-        command.Parameters.AddWithValue("@id", clienteId);
-        var count = (long?)await command.ExecuteScalarAsync() ?? 0;
-        return count > 0;
-    }
-
-    private async Task<bool> VerificarProdutoExiste(int produtoId)
-    {
-        if (_dbConnection == null) throw new InvalidOperationException("Conexão não está aberta");
-
-        const string sql = "SELECT COUNT(*) FROM produtos WHERE id = @id";
-        using var command = new NpgsqlCommand(sql, _dbConnection);
-        command.Parameters.AddWithValue("@id", produtoId);
-        var count = (long?)await command.ExecuteScalarAsync() ?? 0;
-        return count > 0;
-    }
-
-    private async Task InserirCliente(int id, string nome)
-    {
-        if (_dbConnection == null) throw new InvalidOperationException("Conexão não está aberta");
-
-        const string sql = """
-            INSERT INTO clientes (id, nome)
-            VALUES (@id, @nome)
-            ON CONFLICT (id) DO UPDATE SET nome = EXCLUDED.nome
-            """;
-        using var command = new NpgsqlCommand(sql, _dbConnection);
-        command.Parameters.AddWithValue("@id", id);
-        command.Parameters.AddWithValue("@nome", nome);
-        await command.ExecuteNonQueryAsync();
-    }
-
-    private async Task InserirProduto(int id, string nome)
-    {
-        if (_dbConnection == null) throw new InvalidOperationException("Conexão não está aberta");
-
-        const string sql = """
-            INSERT INTO produtos (id, nome)
-            VALUES (@id, @nome)
-            ON CONFLICT (id) DO UPDATE SET nome = EXCLUDED.nome
-            """;
-        using var command = new NpgsqlCommand(sql, _dbConnection);
-        command.Parameters.AddWithValue("@id", id);
-        command.Parameters.AddWithValue("@nome", nome);
+        command.Parameters.AddWithValue("@cliente_id", TestData.ClienteId);
+        command.Parameters.AddWithValue("@produto_id", TestData.ProdutoId);
         await command.ExecuteNonQueryAsync();
     }
 
     public async Task<T?> ConsultarEventosAsync<T>()
     {
-        using var response = await HttpClient.GetAsync("/api/solicitacoes/eventos");
+        using var response = await HttpClient.GetAsync(ApiRoutes.Eventos);
 
         if (!response.IsSuccessStatusCode)
             throw new InvalidOperationException($"Error: {response.StatusCode}");
 
         var content = await response.Content.ReadAsStringAsync();
-        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-        return JsonSerializer.Deserialize<T>(content, options);
+        return JsonSerializer.Deserialize<T>(content, JsonDefaults.CaseInsensitive);
     }
 
-    public async Task<T?> CriarSolicitacaoAsync<T>(int clienteId, int produtoId)
+    public async Task<HttpResponseMessage> EnviarSolicitacaoAsync(int clienteId, int produtoId)
     {
         var payload = new { clienteId, produtoId };
         var json = JsonSerializer.Serialize(payload);
-        using var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+        var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
-        using var response = await HttpClient.PostAsync("/api/solicitacoes", content);
-
-        var responseContent = await response.Content.ReadAsStringAsync();
-        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-        return JsonSerializer.Deserialize<T>(responseContent, options);
+        return await HttpClient.PostAsync(ApiRoutes.Solicitacoes, content);
     }
 
-    public async Task<List<EventoResponse>?> ObterEventosPorClienteEProdutoAsync(int clienteId, int produtoId)
+    public async Task<RespostaCriarSolicitacaoResponse?> CriarSolicitacaoAsync(int clienteId, int produtoId)
+    {
+        using var response = await EnviarSolicitacaoAsync(clienteId, produtoId);
+        var responseContent = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<RespostaCriarSolicitacaoResponse>(
+            responseContent,
+            JsonDefaults.CaseInsensitive);
+    }
+
+    public async Task<List<EventoResponse>> ObterEventosPorClienteEProdutoAsync(int clienteId, int produtoId)
     {
         if (_dbConnection == null || _dbConnection.State != System.Data.ConnectionState.Open)
             throw new InvalidOperationException("Conexão com banco de dados não está aberta");
@@ -230,12 +131,12 @@ public class ApiE2EFixture : IAsyncLifetime
 
     public async Task AguardarEventoSalvoNoBanco(int clienteId, int produtoId, string eventoId, int maxTentativas = 15)
     {
-        int tentativas = 0;
+        var tentativas = 0;
 
         while (tentativas < maxTentativas)
         {
             var eventos = await ObterEventosPorClienteEProdutoAsync(clienteId, produtoId);
-            if (eventos?.Any(e => e.EventoId == eventoId) == true)
+            if (eventos.Any(e => e.EventoId == eventoId))
             {
                 return;
             }
@@ -246,24 +147,72 @@ public class ApiE2EFixture : IAsyncLifetime
 
         throw new InvalidOperationException($"Evento {eventoId} não foi salvo no banco após {maxTentativas} tentativas");
     }
+
+    private async Task AguardarApiDisponivel()
+    {
+        var tentativas = 0;
+        const int maxTentativas = 30;
+
+        while (tentativas < maxTentativas)
+        {
+            try
+            {
+                var response = await HttpClient.GetAsync(ApiRoutes.HealthCheck);
+                if (response.IsSuccessStatusCode)
+                {
+                    return;
+                }
+            }
+            catch
+            {
+                // A API pode ainda estar subindo.
+            }
+
+            tentativas++;
+            await Task.Delay(1000);
+        }
+
+        throw new InvalidOperationException("API não respondeu após 30 segundos");
+    }
+
+    private async Task PrepararDadosTeste()
+    {
+        if (_dbConnection == null || _dbConnection.State != System.Data.ConnectionState.Open)
+            throw new InvalidOperationException("Conexão com banco de dados não está aberta");
+
+        await LimparEventosTeste();
+
+        await InserirCliente(TestData.ClienteId, TestData.NomeCliente);
+        await InserirProduto(TestData.ProdutoId, TestData.NomeProduto);
+    }
+
+    private async Task InserirCliente(int id, string nome)
+    {
+        if (_dbConnection == null) throw new InvalidOperationException("Conexão não está aberta");
+
+        const string sql = """
+            INSERT INTO clientes (id, nome)
+            VALUES (@id, @nome)
+            ON CONFLICT (id) DO UPDATE SET nome = EXCLUDED.nome
+            """;
+        using var command = new NpgsqlCommand(sql, _dbConnection);
+        command.Parameters.AddWithValue("@id", id);
+        command.Parameters.AddWithValue("@nome", nome);
+        await command.ExecuteNonQueryAsync();
+    }
+
+    private async Task InserirProduto(int id, string nome)
+    {
+        if (_dbConnection == null) throw new InvalidOperationException("Conexão não está aberta");
+
+        const string sql = """
+            INSERT INTO produtos (id, nome)
+            VALUES (@id, @nome)
+            ON CONFLICT (id) DO UPDATE SET nome = EXCLUDED.nome
+            """;
+        using var command = new NpgsqlCommand(sql, _dbConnection);
+        command.Parameters.AddWithValue("@id", id);
+        command.Parameters.AddWithValue("@nome", nome);
+        await command.ExecuteNonQueryAsync();
+    }
 }
-
-// DTOs para deserialização das respostas
-public record RespostaEventosResponse(
-    [property: JsonPropertyName("eventos")] List<EventoResponse>? Eventos);
-
-public record EventoResponse(
-    [property: JsonPropertyName("id")] long Id,
-    [property: JsonPropertyName("nomeCliente")] string NomeCliente,
-    [property: JsonPropertyName("nomeProduto")] string NomeProduto,
-    [property: JsonPropertyName("eventoId")] string EventoId,
-    [property: JsonPropertyName("dataHoraEvento")] DateTimeOffset DataHoraEvento,
-    [property: JsonPropertyName("salvoEm")] DateTimeOffset SalvoEm,
-    [property: JsonPropertyName("clienteId")] int? ClienteId = null,
-    [property: JsonPropertyName("produtoId")] int? ProdutoId = null);
-
-public record RespostaCriarSolicitacaoResponse(
-    [property: JsonPropertyName("clienteId")] int ClienteId,
-    [property: JsonPropertyName("produtoId")] int ProdutoId,
-    [property: JsonPropertyName("eventoId")] string EventoId,
-    [property: JsonPropertyName("dataHoraRequisicao")] DateTimeOffset DataHoraRequisicao);

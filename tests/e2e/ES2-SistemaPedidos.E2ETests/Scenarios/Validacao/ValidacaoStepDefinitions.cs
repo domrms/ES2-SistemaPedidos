@@ -1,5 +1,6 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using ES2_SistemaPedidos.E2ETests.Setup;
+using ES2_SistemaPedidos.E2ETests.Support;
 using Reqnroll;
 using Xunit;
 
@@ -23,10 +24,12 @@ public class ValidacaoStepDefinitions
     [When(@"duas solicitações são feitas")]
     public async Task WhenDuasSolicitacoesSaoFeitas()
     {
-        var r1 = await _fixture.CriarSolicitacaoAsync<RespostaCriarSolicitacaoResponse>(9999, 9999);
+        var r1 = await _fixture.CriarSolicitacaoAsync(TestData.ClienteId, TestData.ProdutoId);
         if (r1 != null) _solicitacaoResponses.Add(r1);
+
         await Task.Delay(100);
-        var r2 = await _fixture.CriarSolicitacaoAsync<RespostaCriarSolicitacaoResponse>(9999, 9999);
+
+        var r2 = await _fixture.CriarSolicitacaoAsync(TestData.ClienteId, TestData.ProdutoId);
         if (r2 != null) _solicitacaoResponses.Add(r2);
     }
 
@@ -49,44 +52,52 @@ public class ValidacaoStepDefinitions
     {
         Assert.NotNull(_testContext.Response);
         Assert.Equal(statusCode, (int)_testContext.Response.StatusCode);
+
         var content = await _testContext.Response.Content.ReadAsStringAsync();
-        var resposta = JsonSerializer.Deserialize<RespostaEventosResponse>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        var resposta = JsonSerializer.Deserialize<RespostaEventosResponse>(content, JsonDefaults.CaseInsensitive);
+
         Assert.NotNull(resposta);
         Assert.DoesNotContain(resposta.Eventos ?? new List<EventoResponse>(), e =>
-            e.NomeCliente == "Cliente E2E Test" && e.NomeProduto == "Produto E2E Test");
+            e.NomeCliente == TestData.NomeCliente && e.NomeProduto == TestData.NomeProduto);
     }
 
     [Given(@"que uma solicitação é criada")]
     public async Task GivenQueUmaSolicitacaoECriada()
     {
         await GivenQueATabelaDeEventosEstaLimpa();
-        var r = await _fixture.CriarSolicitacaoAsync<RespostaCriarSolicitacaoResponse>(9999, 9999);
-        Assert.NotNull(r);
-        _solicitacaoResponses.Add(r);
+
+        var response = await _fixture.CriarSolicitacaoAsync(TestData.ClienteId, TestData.ProdutoId);
+        Assert.NotNull(response);
+        _solicitacaoResponses.Add(response);
     }
 
     [When(@"o evento correspondente é salvo no banco de dados")]
     public async Task WhenOEventoCorrespondenteESalvoNoBanco()
     {
         Assert.Single(_solicitacaoResponses);
-        await _fixture.AguardarEventoSalvoNoBanco(9999, 9999, _solicitacaoResponses.First().EventoId);
+        await _fixture.AguardarEventoSalvoNoBanco(
+            TestData.ClienteId,
+            TestData.ProdutoId,
+            _solicitacaoResponses.First().EventoId);
     }
 
     [Then(@"o timestamp salvoEm deve ser maior ou igual ao dataHoraEvento")]
     public async Task ThenOTimestampSalvoEmDeveSerValido()
     {
-        var eventos = await _fixture.ObterEventosPorClienteEProdutoAsync(9999, 9999);
-        var evento = eventos?.FirstOrDefault(e => e.EventoId == _solicitacaoResponses.First().EventoId);
-        Assert.NotNull(evento);
+        var evento = await ObterEventoCriado();
+
         Assert.True(evento.SalvoEm >= evento.DataHoraEvento);
     }
 
     [When(@"uma solicitação POST é enviada com um payload malformado")]
     public async Task WhenUmaSolicitacaoPostEnviadaComPayloadMalformado()
     {
-        var json = "{\"clienteId\": \"abc\", \"produtoId\": \"xyz\"}";
-        var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-        _response = await _fixture.HttpClient.PostAsync("/api/solicitacoes", content);
+        var content = new StringContent(
+            "{\"clienteId\": \"abc\", \"produtoId\": \"xyz\"}",
+            System.Text.Encoding.UTF8,
+            "application/json");
+
+        _response = await _fixture.HttpClient.PostAsync(ApiRoutes.Solicitacoes, content);
     }
 
     [Then(@"a resposta deve indicar um erro")]
@@ -100,14 +111,18 @@ public class ValidacaoStepDefinitions
     public async Task WhenUmaSolicitacaoPostEnviadaComJsonVazio()
     {
         var content = new StringContent("{}", System.Text.Encoding.UTF8, "application/json");
-        _response = await _fixture.HttpClient.PostAsync("/api/solicitacoes", content);
+        _response = await _fixture.HttpClient.PostAsync(ApiRoutes.Solicitacoes, content);
     }
 
     [When(@"uma solicitação POST é enviada com Content-Type incorreto")]
     public async Task WhenUmaSolicitacaoPostEnviadaComContentTypeIncorreto()
     {
-        var content = new StringContent("clienteId=9999&produtoId=9999", System.Text.Encoding.UTF8, "application/x-www-form-urlencoded");
-        _response = await _fixture.HttpClient.PostAsync("/api/solicitacoes", content);
+        var content = new StringContent(
+            $"clienteId={TestData.ClienteId}&produtoId={TestData.ProdutoId}",
+            System.Text.Encoding.UTF8,
+            "application/x-www-form-urlencoded");
+
+        _response = await _fixture.HttpClient.PostAsync(ApiRoutes.Solicitacoes, content);
     }
 
     [Then(@"a resposta deve ser (.*) Unsupported Media Type")]
@@ -121,16 +136,18 @@ public class ValidacaoStepDefinitions
     public async Task GivenQueUmEventoEcriado(int clienteId, int produtoId)
     {
         await GivenQueATabelaDeEventosEstaLimpa();
-        var r = await _fixture.CriarSolicitacaoAsync<RespostaCriarSolicitacaoResponse>(clienteId, produtoId);
-        Assert.NotNull(r);
-        _solicitacaoResponses.Add(r);
-        await _fixture.AguardarEventoSalvoNoBanco(clienteId, produtoId, r.EventoId);
+
+        var response = await _fixture.CriarSolicitacaoAsync(clienteId, produtoId);
+        Assert.NotNull(response);
+        _solicitacaoResponses.Add(response);
+
+        await _fixture.AguardarEventoSalvoNoBanco(clienteId, produtoId, response.EventoId);
     }
 
     [When(@"a função de filtragem de eventos é chamada")]
     public async Task WhenAFuncaoDeFiltragemEChamada()
     {
-        _eventosFiltrados = await _fixture.ObterEventosPorClienteEProdutoAsync(9999, 9999);
+        _eventosFiltrados = await _fixture.ObterEventosPorClienteEProdutoAsync(TestData.ClienteId, TestData.ProdutoId);
     }
 
     [Then(@"a lista retornada deve conter apenas eventos correspondentes")]
@@ -139,8 +156,20 @@ public class ValidacaoStepDefinitions
         Assert.NotNull(_eventosFiltrados);
         Assert.All(_eventosFiltrados, e =>
         {
-            Assert.Equal(9999, e.ClienteId ?? -1);
-            Assert.Equal(9999, e.ProdutoId ?? -1);
+            Assert.Equal(TestData.ClienteId, e.ClienteId ?? -1);
+            Assert.Equal(TestData.ProdutoId, e.ProdutoId ?? -1);
         });
+    }
+
+    private async Task<EventoResponse> ObterEventoCriado()
+    {
+        Assert.NotEmpty(_solicitacaoResponses);
+
+        var eventoId = _solicitacaoResponses.First().EventoId;
+        var eventos = await _fixture.ObterEventosPorClienteEProdutoAsync(TestData.ClienteId, TestData.ProdutoId);
+        var evento = eventos.FirstOrDefault(e => e.EventoId == eventoId);
+
+        Assert.NotNull(evento);
+        return evento;
     }
 }

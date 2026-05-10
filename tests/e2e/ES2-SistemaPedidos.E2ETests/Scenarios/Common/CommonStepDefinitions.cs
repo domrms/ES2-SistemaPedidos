@@ -1,5 +1,6 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using ES2_SistemaPedidos.E2ETests.Setup;
+using ES2_SistemaPedidos.E2ETests.Support;
 using Reqnroll;
 using Xunit;
 
@@ -28,7 +29,7 @@ public class CommonStepDefinitions
     {
         await _fixture.InitializeAsync();
     }
-    
+
     [Given(@"que o sistema está pronto e os dados de teste existem")]
     public async Task GivenQueOSistemaEstaProntoEDadosExistem()
     {
@@ -44,22 +45,22 @@ public class CommonStepDefinitions
     [When(@"uma solicitação POST é enviada para o endpoint de solicitações com cliente (.*) e produto (.*)")]
     public async Task WhenUmaSolicitacaoPostEnviada(int clienteId, int produtoId)
     {
-        var payload = new { clienteId, produtoId };
-        var json = JsonSerializer.Serialize(payload);
-        var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-        _testContext.Response = await _fixture.HttpClient.PostAsync("/api/solicitacoes", content);
+        _testContext.Response = await _fixture.EnviarSolicitacaoAsync(clienteId, produtoId);
 
         if (_testContext.Response.IsSuccessStatusCode)
         {
             var responseContent = await _testContext.Response.Content.ReadAsStringAsync();
-            _testContext.SolicitacaoResponse = JsonSerializer.Deserialize<RespostaCriarSolicitacaoResponse>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            _testContext.SolicitacaoResponse = JsonSerializer.Deserialize<RespostaCriarSolicitacaoResponse>(
+                responseContent,
+                JsonDefaults.CaseInsensitive);
+
             if (_testContext.SolicitacaoResponse?.EventoId != null)
             {
                 _testContext.EventoIds.Add(_testContext.SolicitacaoResponse.EventoId);
             }
         }
     }
-    
+
     [When(@"uma solicitação POST é enviada com o cliente (.*) e produto (.*)")]
     public async Task WhenUmaSolicitacaoPostEnviadaComClienteEProduto(int clienteId, int produtoId)
     {
@@ -69,7 +70,7 @@ public class CommonStepDefinitions
     [When(@"uma requisição GET é feita para o endpoint de eventos")]
     public async Task WhenUmaRequisicaoGetEFeitaParaOEndpointDeEventos()
     {
-        _testContext.Response = await _fixture.HttpClient.GetAsync("/api/solicitacoes/eventos");
+        _testContext.Response = await _fixture.HttpClient.GetAsync(ApiRoutes.Eventos);
     }
 
     [Then(@"a resposta deve ser (.*) Accepted")]
