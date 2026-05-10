@@ -77,12 +77,6 @@ public class ValidacaoStepDefinitions
         await _fixture.LimparEventosTeste();
     }
 
-    [When(@"uma requisição GET é feita para o endpoint de eventos")]
-    public async Task WhenUmaRequisicaoGetEFeitaParaOEndpointDeEventos()
-    {
-        _response = await _fixture.HttpClient.GetAsync("/api/solicitacoes/eventos");
-    }
-
     [Then(@"a resposta deve ser (.*) OK e conter uma lista de eventos vazia")]
     public async Task ThenARespostaDeveSerOkEConterListaVazia(int statusCode)
     {

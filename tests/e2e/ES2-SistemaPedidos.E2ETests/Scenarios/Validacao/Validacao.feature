@@ -5,7 +5,7 @@
 @validacao
 Scenario: Solicitação com cliente inexistente
   Given que o sistema está pronto
-  When uma solicitação POST é enviada com o cliente 999 e produto 0
+  When uma solicitação POST é enviada com o cliente 9999 e produto 9999
   Then a resposta deve ser 400 Bad Request
 
 @validacao

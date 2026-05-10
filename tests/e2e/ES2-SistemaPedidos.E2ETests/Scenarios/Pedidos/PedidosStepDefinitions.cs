@@ -105,12 +105,6 @@ public class PedidosStepDefinitions
         await _fixture.InitializeAsync();
     }
 
-    [When(@"uma requisição GET é feita para o endpoint de eventos")]
-    public async Task WhenUmaRequisicaoGetEFeitaParaOEndpointDeEventos()
-    {
-        _testContext.Response = await _fixture.HttpClient.GetAsync("/api/solicitacoes/eventos");
-    }
-
     [Then(@"a resposta deve ser (.*) OK")]
     public void ThenARespostaDeveSerOk(int statusCode)
     {
