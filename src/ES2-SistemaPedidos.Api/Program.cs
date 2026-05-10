@@ -21,7 +21,7 @@ construtorAplicacao.Host.UseSerilog((contexto, servicos, configuracaoLog) =>
 
 construtorAplicacao.Services.AddCors(opcoes =>
 {
-    opcoes.AddPolicy("PermitirOrigens", construtor =>
+    opcoes.AddPolicy("AllowOrigins", construtor =>
     {
         construtor
             .AllowAnyOrigin()
@@ -71,7 +71,7 @@ var aplicacao = construtorAplicacao.Build();
 
 aplicacao.UseSwagger();
 aplicacao.UseSwaggerUI();
-aplicacao.UseCors("PermitirOrigens");
+aplicacao.UseCors("AllowOrigins");
 aplicacao.MapControllers();
 
 aplicacao.Run();
