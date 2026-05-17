@@ -30,12 +30,6 @@ public class CommonStepDefinitions
         await _fixture.InitializeAsync();
     }
 
-    [Given(@"que o sistema está pronto e os dados de teste existem")]
-    public async Task GivenQueOSistemaEstaProntoEDadosExistem()
-    {
-        await _fixture.InitializeAsync();
-    }
-
     [Given(@"que não há eventos de teste anteriores")]
     public async Task GivenQueNaoHaEventosAnteriores()
     {
