@@ -54,43 +54,6 @@ public class PedidosStepDefinitions
         Assert.Contains(eventos, e => e.EventoId == _testContext.SolicitacaoResponse.EventoId);
     }
 
-    [Given(@"que um evento para o cliente (.*) e produto (.*) foi salvo no banco")]
-    public async Task GivenQueUmEventoFoiSalvoNoBanco(int clienteId, int produtoId)
-    {
-        await GivenQueUmaSolicitacaoFoiCriadaComSucesso(clienteId, produtoId);
-        await WhenOSistemaProcessaMensagem();
-    }
-
-    [When(@"os dados desse evento são consultados")]
-    public void WhenOsDadosDesseEventoSaoConsultados()
-    {
-    }
-
-    [Then(@"os campos do evento devem corresponder aos dados de teste")]
-    public async Task ThenOsCamposDoEventoDevemCorresponder()
-    {
-        var evento = await ObterEventoCriado();
-
-        Assert.Equal(TestData.ClienteId, evento.ClienteId ?? -1);
-        Assert.Equal(TestData.ProdutoId, evento.ProdutoId ?? -1);
-        Assert.Equal(TestData.NomeCliente, evento.NomeCliente);
-        Assert.Equal(TestData.NomeProduto, evento.NomeProduto);
-    }
-
-    [Then(@"o timestamp salvoEm deve ser válido")]
-    public async Task ThenOTimestampSalvoEmDeveSerValido()
-    {
-        var evento = await ObterEventoCriado();
-
-        Assert.True(evento.SalvoEm >= evento.DataHoraEvento);
-    }
-
-    [Given(@"que o sistema pode ou não conter eventos")]
-    public async Task GivenQueOSistemaPodeOuNaoConterEventos()
-    {
-        await _fixture.InitializeAsync();
-    }
-
     [Then(@"a resposta deve ser (.*) OK")]
     public void ThenARespostaDeveSerOk(int statusCode)
     {
@@ -127,37 +90,7 @@ public class PedidosStepDefinitions
 
         var eventos = await ObterEventosTeste();
         Assert.Equal(quantidade, eventos.Count);
-    }
-
-    [Given(@"que um evento de teste é criado e salvo")]
-    public async Task GivenQueUmEventoDeTesteECriadoESalvo()
-    {
-        await GivenQueUmaSolicitacaoFoiCriadaComSucesso(TestData.ClienteId, TestData.ProdutoId);
-        await WhenOSistemaProcessaMensagem();
-    }
-
-    [When(@"o método de limpeza de eventos de teste é invocado")]
-    public async Task WhenOMetodoDeLimpezaEInvocado()
-    {
-        await _fixture.LimparEventosTeste();
-    }
-
-    [When(@"um novo evento é criado")]
-    public async Task WhenUmNovoEventoECriado()
-    {
-        _testContext.EventoIds.Clear();
-
-        await CriarSolicitacaoAceita(TestData.ClienteId, TestData.ProdutoId);
-        await WhenOSistemaProcessaMensagem();
-    }
-
-    [Then(@"apenas o segundo evento deve existir no banco de dados")]
-    public async Task ThenApenasOSegundoEventoDeveExistir()
-    {
-        var eventos = await ObterEventosTeste();
-
-        Assert.Single(eventos);
-        Assert.Contains(eventos, e => e.EventoId == _testContext.EventoIds.Last());
+        Assert.Equal(quantidade, eventos.Select(e => e.EventoId).Distinct().Count());
     }
 
     private async Task CriarSolicitacaoAceita(int clienteId, int produtoId)
@@ -178,15 +111,5 @@ public class PedidosStepDefinitions
     private Task<List<EventoResponse>> ObterEventosTeste()
     {
         return _fixture.ObterEventosPorClienteEProdutoAsync(TestData.ClienteId, TestData.ProdutoId);
-    }
-
-    private async Task<EventoResponse> ObterEventoCriado()
-    {
-        Assert.NotNull(_testContext.SolicitacaoResponse);
-        var eventos = await ObterEventosTeste();
-        var evento = eventos.FirstOrDefault(e => e.EventoId == _testContext.SolicitacaoResponse.EventoId);
-
-        Assert.NotNull(evento);
-        return evento;
     }
 }

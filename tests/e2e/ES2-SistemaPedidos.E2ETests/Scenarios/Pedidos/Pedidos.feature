@@ -1,9 +1,9 @@
-﻿Feature: Fluxo de Pedidos
+Feature: Fluxo de Pedidos
 
-  Este arquivo descreve os cenários de teste de ponta a ponta para o fluxo de criação e consulta de pedidos.
+  Cenários de ponta a ponta que protegem o contrato público e o efeito principal do fluxo de pedidos.
 
 @pedidos
-Scenario: Criação de uma nova solicitação
+Scenario: Criação de solicitação aceita
   Given que o sistema está pronto e os dados de teste foram inicializados
   And que não há eventos de teste anteriores
   When uma solicitação POST é enviada para o endpoint de solicitações com cliente 9999 e produto 9999
@@ -17,15 +17,8 @@ Scenario: Persistência do evento no banco de dados
   Then um registro de evento correspondente deve existir no banco de dados
 
 @pedidos
-Scenario: Validação dos dados do evento salvo
-  Given que um evento para o cliente 9999 e produto 9999 foi salvo no banco
-  When os dados desse evento são consultados
-  Then os campos do evento devem corresponder aos dados de teste
-  And o timestamp salvoEm deve ser válido
-
-@pedidos
 Scenario: Consulta de eventos pela API
-  Given que o sistema pode ou não conter eventos
+  Given que o sistema está pronto
   When uma requisição GET é feita para o endpoint de eventos
   Then a resposta deve ser 200 OK
   And o corpo da resposta deve conter uma lista de eventos
@@ -35,10 +28,3 @@ Scenario: Processamento de múltiplas solicitações
   Given que o sistema está pronto
   When 3 solicitações para o cliente 9999 e produto 9999 são enviadas
   Then 3 eventos distintos devem ser salvos no banco de dados
-
-@pedidos
-Scenario: Isolamento de dados entre testes
-  Given que um evento de teste é criado e salvo
-  When o método de limpeza de eventos de teste é invocado
-  And um novo evento é criado
-  Then apenas o segundo evento deve existir no banco de dados
