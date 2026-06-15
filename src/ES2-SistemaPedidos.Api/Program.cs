@@ -21,10 +21,13 @@ construtorAplicacao.Host.UseSerilog((contexto, servicos, configuracaoLog) =>
 
 construtorAplicacao.Services.AddCors(opcoes =>
 {
+    var origensPermitidas = construtorAplicacao.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+                            ?? Array.Empty<string>();
+
     opcoes.AddPolicy("AllowOrigins", construtor =>
     {
         construtor
-            .AllowAnyOrigin()
+            .WithOrigins(origensPermitidas)
             .AllowAnyMethod()
             .AllowAnyHeader();
     });
