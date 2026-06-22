@@ -1,4 +1,4 @@
-# ES2 - Sistema de Pedidos
+# ES2 - Sistema de Pedidos 
 
 Projeto demonstrativo de um sistema de pedidos com API HTTP, processamento assincrono via SQS/Lambda, persistencia em PostgreSQL, frontend estatico e testes unitarios/E2E.
 
