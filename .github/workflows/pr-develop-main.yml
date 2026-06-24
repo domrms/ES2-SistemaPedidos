@@ -1,9 +1,9 @@
-name: Auto PR - Homolog to Main
+name: Auto PR - Develop to Main
 
 on:
   push:
     branches:
-      - homolog
+      - develop
 
 jobs:
   create-pr:
@@ -19,15 +19,15 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          PR_EXISTS=$(gh pr list --base main --head homolog --state open --json number --jq 'length')
+          PR_EXISTS=$(gh pr list --base main --head develop --state open --json number --jq 'length')
           
           if [ "$PR_EXISTS" -eq 0 ]; then
             gh pr create \
               --base main \
-              --head homolog \
-              --title "Release: Homolog -> Main" \
-              --body "PR automático para envio à produção."
+              --head develop \
+              --title "Release: Develop -> Main" \
+              --body "PR automático para atualização do ambiente de produção."
             echo "PR criado com sucesso."
           else
-            echo "PR de homolog para main já está aberto. Atualizado com os novos commits."
+            echo "PR de develop para main já está aberto. Atualizado com os novos commits."
           fi
