@@ -42,6 +42,6 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         shell: powershell
         run: |
-          /d:sonar.exclusions="src/ES2-SistemaPedidos.FrontEnd/**,.github/workflows/**,database/**,docker/**,tests/**"
+          ${{ runner.temp }}\scanner\dotnet-sonarscanner begin /k:"domrms_es2-sistemapedidos" /o:"domrms" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.exclusions="src/ES2-SistemaPedidos.FrontEnd/**,.github/workflows/**,database/**,docker/**,tests/**"
           dotnet build
           ${{ runner.temp }}\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
