@@ -1,0 +1,35 @@
+name: Auto PR - Feature to Develop
+
+on:
+  push:
+    branches:
+      - 'feature/**' # Dispara ao dar push em qualquer branch que comece com feature/
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create Pull Request to Develop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Verifica se já existe um PR aberto desta branch para a develop
+          PR_EXISTS=$(gh pr list --base develop --head ${{ github.ref_name }} --state open --json number --jq 'length')
+          
+          if [ "$PR_EXISTS" -eq 0 ]; then
+            gh pr create \
+              --base develop \
+              --head ${{ github.ref_name }} \
+              --title "Feature: ${{ github.ref_name }}" \
+              --body "PR criado automaticamente pela pipeline." \
+              --draft
+            echo "Draft PR criado com sucesso."
+          else
+            echo "Já existe um PR aberto para esta branch. Novos commits foram adicionados a ele."
+          fi

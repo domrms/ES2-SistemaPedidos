@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Api + LambdaConsumerSQS" type="CompoundRunConfigurationType">
+    <toRun name="ES2-SistemaPedidos.LambdaConsumerSQS" type="LaunchSettings" />
+    <toRun name="ES2-SistemaPedidos.Api" type="LaunchSettings" />
+    <method v="2" />
+  </configuration>
+</component>
