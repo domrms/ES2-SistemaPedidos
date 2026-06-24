@@ -22,10 +22,10 @@ jobs:
           PR_EXISTS=$(gh pr list --base main --head develop --state open --json number --jq 'length')
           
           if [ "$PR_EXISTS" -eq 0 ]; then
-            gh pr create 
-              --base main 
-              --head develop 
-              --title "Release: Develop -> Main" 
+            gh pr create \
+              --base main \
+              --head develop \
+              --title "Release: Develop -> Main" \
               --body "PR automático para atualização do ambiente de produção."
             echo "PR criado com sucesso."
           else
