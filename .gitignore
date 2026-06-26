@@ -287,6 +287,8 @@ FakesAssemblies/
 # Node.js Tools for Visual Studio
 .ntvs_analysis.dat
 node_modules/
+src/ES2-SistemaPedidos.FrontEnd/coverage/
+src/ES2-SistemaPedidos.FrontEnd/script.js.map
 
 # Visual Studio 6 build log
 *.plg

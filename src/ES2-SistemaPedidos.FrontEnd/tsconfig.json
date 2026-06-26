@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "None",
+    "lib": [
+      "DOM",
+      "ES2020"
+    ],
+    "strict": true,
+    "outFile": "script.js",
+    "types": []
+  },
+  "include": [
+    "script.ts"
+  ]
+}
