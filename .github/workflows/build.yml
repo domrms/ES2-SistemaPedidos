@@ -2,7 +2,7 @@
 on:
   push:
     branches:
-      - main
+      - develop
   pull_request:
     types: [opened, synchronize, reopened]
 jobs:
@@ -18,6 +18,12 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: src/ES2-SistemaPedidos.FrontEnd/package-lock.json
       - name: Cache SonarQube Cloud packages
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
@@ -42,6 +48,15 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         shell: powershell
         run: |
-          ${{ runner.temp }}\scanner\dotnet-sonarscanner begin /k:"domrms_es2-sistemapedidos" /o:"domrms" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.exclusions="src/ES2-SistemaPedidos.FrontEnd/**,.github/workflows/**,database/**,docker/**,tests/**"
+          Push-Location src\ES2-SistemaPedidos.FrontEnd
+          npm ci
+          npm run build
+          npm run test:coverage
+          Pop-Location
+          ${{ runner.temp }}\scanner\dotnet-sonarscanner begin /k:"domrms_es2-sistemapedidos" /o:"domrms" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.exclusions=".github/workflows/**,database/**,docker/**,tests/e2e/**,src/ES2-SistemaPedidos.FrontEnd/node_modules/**,src/ES2-SistemaPedidos.FrontEnd/coverage/**,src/ES2-SistemaPedidos.FrontEnd/script.js,src/ES2-SistemaPedidos.FrontEnd/vitest.config.ts" /d:sonar.test.inclusions="tests/unit/**/*.cs,src/ES2-SistemaPedidos.FrontEnd/**/*.test.ts" /d:sonar.coverage.exclusions="src/ES2-SistemaPedidos.FrontEnd/index.html,src/ES2-SistemaPedidos.FrontEnd/styles.css,src/ES2-SistemaPedidos.FrontEnd/**/*.test.ts" /d:sonar.javascript.lcov.reportPaths="src/ES2-SistemaPedidos.FrontEnd/coverage/lcov.info" /d:sonar.cs.opencover.reportsPaths="TestResults/**/coverage.opencover.xml" /d:sonar.cs.vstest.reportsPaths="TestResults/**/*.trx"
           dotnet build
+          $unitTestProjects = Get-ChildItem tests\unit -Recurse -Filter *.csproj
+          foreach ($project in $unitTestProjects) {
+            dotnet test $project.FullName --no-build --logger trx --collect:"XPlat Code Coverage" --results-directory TestResults -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+          }
           ${{ runner.temp }}\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
