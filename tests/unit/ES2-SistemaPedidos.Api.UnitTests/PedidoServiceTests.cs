@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 using ES2_SistemaPedidos.Api.Application.Abstractions;
 using ES2_SistemaPedidos.Api.Application.Pedidos;
 using ES2_SistemaPedidos.Shared.Contracts;
-using ES2_SistemaPedidos.Shared.Domain.Repositories;
+using ES2_SistemaPedidos.Shared.Domain;
 
 namespace ES2_SistemaPedidos.Api.UnitTests;
 
@@ -26,8 +26,8 @@ public sealed partial class PedidoServiceTests
             Assert.Equal("clienteId", detalhe.Campo);
             Assert.Equal("O clienteId deve ser maior que zero.", detalhe.Erro);
         });
-        Assert.Equal(0, fixture.Clientes.Consultas);
-        Assert.Equal(0, fixture.Produtos.Consultas);
+        Assert.Equal(0, fixture.Consultas.ConsultasCliente);
+        Assert.Equal(0, fixture.Consultas.ConsultasProduto);
         Assert.Empty(fixture.Publicador.Eventos);
     }
 
@@ -46,8 +46,8 @@ public sealed partial class PedidoServiceTests
             Assert.Equal("produtoId", detalhe.Campo);
             Assert.Equal("O produtoId deve ser maior que zero.", detalhe.Erro);
         });
-        Assert.Equal(0, fixture.Clientes.Consultas);
-        Assert.Equal(0, fixture.Produtos.Consultas);
+        Assert.Equal(0, fixture.Consultas.ConsultasCliente);
+        Assert.Equal(0, fixture.Consultas.ConsultasProduto);
         Assert.Empty(fixture.Publicador.Eventos);
     }
 
@@ -66,8 +66,8 @@ public sealed partial class PedidoServiceTests
             Assert.Equal("clienteId", detalhe.Campo);
             Assert.Equal("Cliente 99 nao encontrado.", detalhe.Erro);
         });
-        Assert.Equal(1, fixture.Clientes.Consultas);
-        Assert.Equal(0, fixture.Produtos.Consultas);
+        Assert.Equal(1, fixture.Consultas.ConsultasCliente);
+        Assert.Equal(0, fixture.Consultas.ConsultasProduto);
         Assert.Empty(fixture.Publicador.Eventos);
     }
 
@@ -86,8 +86,8 @@ public sealed partial class PedidoServiceTests
             Assert.Equal("produtoId", detalhe.Campo);
             Assert.Equal("Produto 88 nao encontrado.", detalhe.Erro);
         });
-        Assert.Equal(1, fixture.Clientes.Consultas);
-        Assert.Equal(1, fixture.Produtos.Consultas);
+        Assert.Equal(1, fixture.Consultas.ConsultasCliente);
+        Assert.Equal(1, fixture.Consultas.ConsultasProduto);
         Assert.Empty(fixture.Publicador.Eventos);
     }
 
@@ -127,7 +127,7 @@ public sealed partial class PedidoServiceTests
     [Fact]
     public async Task ListarEventosAsync_quando_ha_eventos_retorna_lista_com_nomes()
     {
-        var eventoDetalhado1 = new EventoClienteDetalhado(
+        var eventoDetalhado1 = new RespostaEventoDetalhado(
             1,
             "Cliente A",
             "Produto X",
@@ -135,7 +135,7 @@ public sealed partial class PedidoServiceTests
             new DateTimeOffset(2026, 5, 3, 10, 0, 0, TimeSpan.Zero),
             new DateTimeOffset(2026, 5, 3, 10, 0, 5, TimeSpan.Zero));
 
-        var eventoDetalhado2 = new EventoClienteDetalhado(
+        var eventoDetalhado2 = new RespostaEventoDetalhado(
             2,
             "Cliente B",
             "Produto Y",
@@ -163,6 +163,53 @@ public sealed partial class PedidoServiceTests
         Assert.Equal("ES2-87654321-110000", segundo.EventoId);
     }
 
+    [Fact]
+    public async Task ObterHistoricoAsync_quando_id_invalido_retorna_requisicao_invalida()
+    {
+        var fixture = new Fixture();
+        var resultado = await fixture.CriarServico().ObterHistoricoAsync(0, CancellationToken.None);
+
+        Assert.Equal(TipoResultadoConsulta.RequisicaoInvalida, resultado.Tipo);
+        Assert.Equal("PedidoIdInvalido", resultado.Erro?.Erro);
+        Assert.Equal(0, fixture.Consultas.ConsultasHistorico);
+    }
+
+    [Fact]
+    public async Task ObterHistoricoAsync_quando_pedido_nao_existe_retorna_nao_encontrado()
+    {
+        var fixture = new Fixture { Historico = null };
+        var resultado = await fixture.CriarServico().ObterHistoricoAsync(42, CancellationToken.None);
+
+        Assert.Equal(TipoResultadoConsulta.NaoEncontrado, resultado.Tipo);
+        Assert.Equal("PedidoNaoEncontrado", resultado.Erro?.Erro);
+    }
+
+    [Fact]
+    public async Task ObterHistoricoAsync_quando_pedido_existe_retorna_linha_do_tempo_ordenada()
+    {
+        var fixture = new Fixture
+        {
+            Historico = new RespostaHistoricoPedido(42, "ES2-12345678-120405",
+            [
+                new RespostaTransicaoPedido(1, EstadoPedido.Recebido, AgoraUtc, null),
+                new RespostaTransicaoPedido(2, EstadoPedido.Concluido, AgoraUtc.AddSeconds(1), "Finalizado")
+            ])
+        };
+
+        var resultado = await fixture.CriarServico().ObterHistoricoAsync(42, CancellationToken.None);
+
+        Assert.Equal(TipoResultadoConsulta.Sucesso, resultado.Tipo);
+        Assert.Equal(42, resultado.Valor?.PedidoId);
+        Assert.Collection(resultado.Valor!.Historico,
+            recebido => Assert.Equal(EstadoPedido.Recebido, recebido.Status),
+            concluido =>
+            {
+                Assert.Equal(EstadoPedido.Concluido, concluido.Status);
+                Assert.Equal("Finalizado", concluido.Detalhe);
+            });
+        Assert.Equal(TimeSpan.FromHours(-3), resultado.Valor.Historico.First().RegistradoEm.Offset);
+    }
+
     private static RespostaErroValidacao ExtrairErro(Resultado<RespostaCriarSolicitacao> resultado)
     {
         return resultado.Match<RespostaErroValidacao?>(_ => null, erro => erro)!;
@@ -182,54 +229,54 @@ public sealed partial class PedidoServiceTests
 
         public bool ProdutoExiste { get; init; } = true;
 
-        public IReadOnlyCollection<EventoClienteDetalhado> Eventos { get; init; } = [];
+        public IReadOnlyCollection<RespostaEventoDetalhado> Eventos { get; init; } = [];
 
-        public FakeClienteRepositorio Clientes { get; private set; } = null!;
+        public RespostaHistoricoPedido? Historico { get; init; }
 
-        public FakeProdutoRepositorio Produtos { get; private set; } = null!;
-
-        public FakeEventoRepositorio EventoRepositorio { get; private set; } = null!;
+        public FakeConsultasPedidosClient Consultas { get; private set; } = null!;
 
         public FakePublicadorEventoSolicitacao Publicador { get; } = new();
 
         public PedidoService CriarServico()
         {
-            Clientes = new FakeClienteRepositorio(ClienteExiste);
-            Produtos = new FakeProdutoRepositorio(ProdutoExiste);
-            EventoRepositorio = new FakeEventoRepositorio(Eventos);
-
-            return new PedidoService(Clientes, Produtos, EventoRepositorio, Publicador, new FakeTimeProvider(AgoraUtc));
+            Consultas = new FakeConsultasPedidosClient(ClienteExiste, ProdutoExiste, Eventos, Historico);
+            return new PedidoService(Consultas, Publicador, new FakeTimeProvider(AgoraUtc));
         }
     }
 
-    private sealed class FakeClienteRepositorio(bool existe) : IClienteRepositorio
+    private sealed class FakeConsultasPedidosClient(
+        bool clienteExiste,
+        bool produtoExiste,
+        IReadOnlyCollection<RespostaEventoDetalhado> eventos,
+        RespostaHistoricoPedido? historico) : IPersistenciaPedidosClient
     {
-        public int Consultas { get; private set; }
+        public int ConsultasCliente { get; private set; }
+        public int ConsultasProduto { get; private set; }
+        public int ConsultasHistorico { get; private set; }
 
         public Task<bool> ExisteClienteAsync(int clienteId, CancellationToken tokenCancelamento)
         {
-            Consultas++;
-            return Task.FromResult(existe);
+            ConsultasCliente++;
+            return Task.FromResult(clienteExiste);
         }
-    }
-
-    private sealed class FakeProdutoRepositorio(bool existe) : IProdutoRepositorio
-    {
-        public int Consultas { get; private set; }
 
         public Task<bool> ExisteProdutoAsync(int produtoId, CancellationToken tokenCancelamento)
         {
-            Consultas++;
-            return Task.FromResult(existe);
+            ConsultasProduto++;
+            return Task.FromResult(produtoExiste);
         }
-    }
 
-    private sealed class FakeEventoRepositorio(IReadOnlyCollection<EventoClienteDetalhado> eventos) : IEventoRepositorio
-    {
-        public Task<IReadOnlyCollection<EventoClienteDetalhado>> ListarTodosEventosAsync(
+        public Task<IReadOnlyCollection<RespostaEventoDetalhado>> ListarEventosAsync(
             CancellationToken tokenCancelamento)
         {
             return Task.FromResult(eventos);
+        }
+
+        public Task<RespostaHistoricoPedido?> ObterHistoricoAsync(long pedidoId,
+            CancellationToken tokenCancelamento)
+        {
+            ConsultasHistorico++;
+            return Task.FromResult(historico);
         }
     }
 

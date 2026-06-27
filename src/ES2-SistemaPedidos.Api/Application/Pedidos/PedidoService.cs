@@ -2,54 +2,53 @@ using System.Globalization;
 using System.Security.Cryptography;
 using ES2_SistemaPedidos.Api.Application.Abstractions;
 using ES2_SistemaPedidos.Shared.Contracts;
-using ES2_SistemaPedidos.Shared.Domain.Repositories;
 
 namespace ES2_SistemaPedidos.Api.Application.Pedidos;
 
 public sealed class PedidoService(
-    IClienteRepositorio clienteRepositorio,
-    IProdutoRepositorio produtoRepositorio,
-    IEventoRepositorio eventoRepositorio,
-    IPublicadorEventoSolicitacao publicadorEvento,
-    TimeProvider provedorTempo)
+    IPersistenciaPedidosClient persistenciaPedidos,
+    IPublicadorEventoSolicitacao eventPublisher,
+    TimeProvider timeProvider)
 {
-    // ...existing code...
+    private const string ValidationFailedCode = "ValidacaoFalhou";
+    private const string ValidationFailedMessage = "A validacao da solicitacao falhou";
+
     public async Task<Resultado<RespostaCriarSolicitacao>> CriarSolicitacaoAsync(
         RequisicaoCriarSolicitacao requisicao,
-        CancellationToken tokenCancelamento)
+        CancellationToken cancellationToken)
     {
         if (requisicao.ClienteId <= 0)
             return Resultado<RespostaCriarSolicitacao>.ValidationFailed(new RespostaErroValidacao(
-                "ValidacaoFalhou",
-                "A validacao da solicitacao falhou",
+                ValidationFailedCode,
+                ValidationFailedMessage,
                 [new ErroValidacao("clienteId", "O clienteId deve ser maior que zero.")]));
 
         if (requisicao.ProdutoId <= 0)
             return Resultado<RespostaCriarSolicitacao>.ValidationFailed(new RespostaErroValidacao(
-                "ValidacaoFalhou",
-                "A validacao da solicitacao falhou",
+                ValidationFailedCode,
+                ValidationFailedMessage,
                 [new ErroValidacao("produtoId", "O produtoId deve ser maior que zero.")]));
 
-        if (!await clienteRepositorio.ExisteClienteAsync(requisicao.ClienteId, tokenCancelamento))
+        if (!await persistenciaPedidos.ExisteClienteAsync(requisicao.ClienteId, cancellationToken))
             return Resultado<RespostaCriarSolicitacao>.ValidationFailed(new RespostaErroValidacao(
-                "ValidacaoFalhou",
-                "A validacao da solicitacao falhou",
+                ValidationFailedCode,
+                ValidationFailedMessage,
                 [new ErroValidacao("clienteId", $"Cliente {requisicao.ClienteId} nao encontrado.")]));
 
-        if (!await produtoRepositorio.ExisteProdutoAsync(requisicao.ProdutoId, tokenCancelamento))
+        if (!await persistenciaPedidos.ExisteProdutoAsync(requisicao.ProdutoId, cancellationToken))
             return Resultado<RespostaCriarSolicitacao>.ValidationFailed(new RespostaErroValidacao(
-                "ValidacaoFalhou",
-                "A validacao da solicitacao falhou",
+                ValidationFailedCode,
+                ValidationFailedMessage,
                 [new ErroValidacao("produtoId", $"Produto {requisicao.ProdutoId} nao encontrado.")]));
 
-        var dataHoraBrasilia = ObterDataHoraBrasilia(provedorTempo.GetUtcNow());
+        var brasiliaDateTime = GetBrasiliaDateTime(timeProvider.GetUtcNow());
         var evento = new EventoSolicitacaoCliente(
             requisicao.ClienteId,
             requisicao.ProdutoId,
-            GerarEventoId(dataHoraBrasilia),
-            dataHoraBrasilia);
+            GenerateEventId(brasiliaDateTime),
+            brasiliaDateTime);
 
-        await publicadorEvento.PublicarAsync(evento, tokenCancelamento);
+        await eventPublisher.PublicarAsync(evento, cancellationToken);
 
         return Resultado<RespostaCriarSolicitacao>.Success(new RespostaCriarSolicitacao(
             evento.ClienteId,
@@ -58,35 +57,64 @@ public sealed class PedidoService(
             evento.DataHoraRequisicao));
     }
 
-    public async Task<RespostaListarEventos> ListarEventosAsync(CancellationToken tokenCancelamento)
+    public async Task<RespostaListarEventos> ListarEventosAsync(CancellationToken cancellationToken)
     {
-        var eventos = await eventoRepositorio.ListarTodosEventosAsync(tokenCancelamento);
+        var eventos = await persistenciaPedidos.ListarEventosAsync(cancellationToken);
         var eventosDetalhados = eventos.Select(e => new RespostaEventoDetalhado(
                 e.Id,
                 e.NomeCliente,
                 e.NomeProduto,
                 e.EventoId,
-                ObterDataHoraBrasilia(e.DataHoraEvento),
-                ObterDataHoraBrasilia(e.SalvoEm)))
+                GetBrasiliaDateTime(e.DataHoraEvento),
+                GetBrasiliaDateTime(e.SalvoEm)))
             .ToList();
 
         return new RespostaListarEventos(eventosDetalhados.AsReadOnly());
     }
 
-    private static string GerarEventoId(DateTimeOffset dataHoraBrasilia)
+    public async Task<ResultadoConsulta<RespostaHistoricoPedido>> ObterHistoricoAsync(long pedidoId,
+        CancellationToken cancellationToken)
     {
-        var numerosAleatorios =
+        if (pedidoId <= 0)
+            return ResultadoConsulta<RespostaHistoricoPedido>.RequisicaoInvalida(new RespostaErro(
+                "PedidoIdInvalido",
+                "O id do pedido deve ser maior que zero."));
+
+        var historico = await persistenciaPedidos.ObterHistoricoAsync(pedidoId, cancellationToken);
+        if (historico is null)
+            return ResultadoConsulta<RespostaHistoricoPedido>.NaoEncontrado(new RespostaErro(
+                "PedidoNaoEncontrado",
+                $"Pedido {pedidoId} nao encontrado."));
+
+        var transicoes = historico.Historico
+            .Select(transicao => new RespostaTransicaoPedido(
+                transicao.Id,
+                transicao.Status,
+                GetBrasiliaDateTime(transicao.RegistradoEm),
+                transicao.Detalhe))
+            .ToList()
+            .AsReadOnly();
+
+        return ResultadoConsulta<RespostaHistoricoPedido>.Sucesso(new RespostaHistoricoPedido(
+            historico.PedidoId,
+            historico.EventoId,
+            transicoes));
+    }
+
+    private static string GenerateEventId(DateTimeOffset brasiliaDateTime)
+    {
+        var randomDigits =
             RandomNumberGenerator.GetInt32(0, 100_000_000).ToString("D8", CultureInfo.InvariantCulture);
-        return $"ES2-{numerosAleatorios}-{dataHoraBrasilia:HHmmss}";
+        return $"ES2-{randomDigits}-{brasiliaDateTime:HHmmss}";
     }
 
-    private static DateTimeOffset ObterDataHoraBrasilia(DateTimeOffset dataHoraUtc)
+    private static DateTimeOffset GetBrasiliaDateTime(DateTimeOffset utcDateTime)
     {
-        var fusoBrasilia = ObterFusoBrasilia();
-        return TimeZoneInfo.ConvertTime(dataHoraUtc, fusoBrasilia);
+        var brasiliaTimeZone = GetBrasiliaTimeZone();
+        return TimeZoneInfo.ConvertTime(utcDateTime, brasiliaTimeZone);
     }
 
-    private static TimeZoneInfo ObterFusoBrasilia()
+    private static TimeZoneInfo GetBrasiliaTimeZone()
     {
         try
         {

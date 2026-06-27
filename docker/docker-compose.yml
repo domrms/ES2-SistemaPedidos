@@ -75,6 +75,8 @@ services:
         condition: service_started
       lambda-consumer-sqs-image:
         condition: service_completed_successfully
+      persistencia-api:
+        condition: service_started
     entrypoint: ["/bin/sh", "-c"]
     environment:
       AWS_ACCESS_KEY_ID: test
@@ -96,8 +98,8 @@ services:
       dockerfile: docker/Dockerfile.api
     container_name: es2-sistema-pedidos-api
     depends_on:
-      postgres:
-        condition: service_healthy
+      persistencia-api:
+        condition: service_started
       aws-init:
         condition: service_completed_successfully
     ports:
@@ -110,7 +112,41 @@ services:
       AWS__Regiao: us-east-1
       AWS__ServiceUrl: http://floci:4566
       SQS_FILA_URL: http://floci:4566/000000000000/processamento-solicitacoes
+      PersistenciaApi__UrlBase: http://persistencia-api:8080
+      Cors__AllowedOrigins__0: http://localhost:8000
+    networks:
+      - es2-sistema-pedidos
+
+  frontend:
+    image: es2-sistema-pedidos-frontend:latest
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    container_name: es2-sistema-pedidos-frontend
+    depends_on:
+      api:
+        condition: service_started
+    ports:
+      - "8000:80"
+    networks:
+      - es2-sistema-pedidos
+
+  persistencia-api:
+    image: es2-sistema-pedidos-persistencia-api:latest
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.persistencia-api
+    container_name: es2-sistema-pedidos-persistencia-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8081:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__BancoPedidos: Host=postgres;Port=5432;Database=es2_pedidos;Username=dev;Password=dev
+      Cache__DuracaoSegundos: 300
     networks:
       - es2-sistema-pedidos
 

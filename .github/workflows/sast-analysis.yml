@@ -1,0 +1,23 @@
+name: SAST Analysis
+
+on:
+  push:
+    branches:
+      - feature/**
+
+jobs:
+  sast-scan:
+    name: SAST Scan
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x'
+
+      - name: Run SAST Analyzer
+        run: dotnet run --project tests/sast/SastEngine.Console/SastEngine.Console.csproj

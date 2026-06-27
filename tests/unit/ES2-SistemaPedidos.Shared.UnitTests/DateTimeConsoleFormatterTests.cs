@@ -43,4 +43,21 @@ public sealed class DateTimeConsoleFormatterTests
         Assert.Contains("[2026-05-03 12:04:05.000 -03:00 ERR] Falha ao processar pedido" + Environment.NewLine, texto);
         Assert.Contains("System.InvalidOperationException: falha esperada", texto);
     }
+
+    [Theory]
+    [InlineData(LogEventLevel.Verbose, "VRB")]
+    [InlineData(LogEventLevel.Debug, "DBG")]
+    [InlineData(LogEventLevel.Warning, "WRN")]
+    [InlineData(LogEventLevel.Fatal, "FTL")]
+    public void Format_deve_abreviar_os_demais_niveis(LogEventLevel level, string abreviacao)
+    {
+        var formatter = new DateTimeConsoleFormatter();
+        using var output = new StringWriter();
+        var logEvent = new LogEvent(DateTimeOffset.UtcNow, level, null,
+            new MessageTemplateParser().Parse("mensagem"), []);
+
+        formatter.Format(logEvent, output);
+
+        Assert.Contains($" {abreviacao}] mensagem", output.ToString());
+    }
 }

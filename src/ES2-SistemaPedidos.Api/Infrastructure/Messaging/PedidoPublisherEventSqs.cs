@@ -6,33 +6,33 @@ using ES2_SistemaPedidos.Shared.Contracts;
 
 namespace ES2_SistemaPedidos.Api.Infrastructure.Messaging;
 
-public sealed class PedidoPublisherEventSqs(
+public sealed partial class PedidoPublisherEventSqs(
     IAmazonSQS sqs,
-    IConfiguration configuracao,
-    ILogger<PedidoPublisherEventSqs> registrador)
+    IConfiguration configuration,
+    ILogger<PedidoPublisherEventSqs> logger)
     : IPublicadorEventoSolicitacao
 {
-    private static readonly JsonSerializerOptions OpcoesJson = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
-    public async Task PublicarAsync(EventoSolicitacaoCliente evento, CancellationToken tokenCancelamento)
+    public async Task PublicarAsync(EventoSolicitacaoCliente evento, CancellationToken cancellationToken)
     {
-        var filaUrl = configuracao["SQS_FILA_URL"]
-                      ?? configuracao["SQS_QUEUE_URL"]
-                      ?? configuracao["AWS:FilaSolicitacoesUrl"]
-                      ?? configuracao["AWS:FilaPedidosUrl"]
-                      ?? configuracao["AWS:SqsQueueUrl"];
+        var queueUrl = configuration["SQS_FILA_URL"]
+                       ?? configuration["SQS_QUEUE_URL"]
+                       ?? configuration["AWS:FilaSolicitacoesUrl"]
+                       ?? configuration["AWS:FilaPedidosUrl"]
+                       ?? configuration["AWS:SqsQueueUrl"];
 
-        if (string.IsNullOrWhiteSpace(filaUrl))
+        if (string.IsNullOrWhiteSpace(queueUrl))
             throw new InvalidOperationException(
                 "URL da fila SQS nao configurada. Defina SQS_FILA_URL ou AWS:FilaSolicitacoesUrl.");
 
-        var mensagem = JsonSerializer.Serialize(evento, OpcoesJson);
-        registrador.LogInformation("Payload enviado para SQS: {PayloadSqs}", mensagem);
+        var message = JsonSerializer.Serialize(evento, JsonOptions);
+        LogSqsPayload(logger, message);
 
-        var resposta = await sqs.SendMessageAsync(new SendMessageRequest
+        var response = await sqs.SendMessageAsync(new SendMessageRequest
         {
-            QueueUrl = filaUrl,
-            MessageBody = mensagem,
+            QueueUrl = queueUrl,
+            MessageBody = message,
             MessageAttributes = new Dictionary<string, MessageAttributeValue>
             {
                 ["tipoEvento"] = new()
@@ -41,13 +41,16 @@ public sealed class PedidoPublisherEventSqs(
                     StringValue = "SolicitacaoCliente"
                 }
             }
-        }, tokenCancelamento);
+        }, cancellationToken);
 
-        registrador.LogInformation(
-            "Publicado evento {EventoId} do cliente {ClienteId} e produto {ProdutoId} na mensagem SQS {MensagemId}",
-            evento.EventoId,
-            evento.ClienteId,
-            evento.ProdutoId,
-            resposta.MessageId);
+        LogPublishedEvent(logger, evento.EventoId, evento.ClienteId, evento.ProdutoId, response.MessageId);
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Payload enviado para SQS: {PayloadSqs}")]
+    private static partial void LogSqsPayload(ILogger logger, string payloadSqs);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "Publicado evento {EventoId} do cliente {ClienteId} e produto {ProdutoId} na mensagem SQS {MensagemId}")]
+    private static partial void LogPublishedEvent(ILogger logger, string eventoId, int clienteId, int produtoId,
+        string mensagemId);
 }

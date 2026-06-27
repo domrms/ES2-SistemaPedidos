@@ -1,4 +1,6 @@
+using ES2_SistemaPedidos.Shared.Data;
 using ES2_SistemaPedidos.Shared.Domain;
+using Microsoft.EntityFrameworkCore;
 
 namespace ES2_SistemaPedidos.Shared.UnitTests;
 
@@ -38,5 +40,55 @@ public sealed class DomainModelTests
         Assert.Equal(salvoEm, evento.SalvoEm);
         Assert.Null(evento.Cliente);
         Assert.Null(evento.Produto);
+    }
+
+    [Fact]
+    public void PedidoStatus_deve_expor_transicao_imutavel()
+    {
+        var registradoEm = new DateTimeOffset(2026, 5, 3, 15, 0, 1, TimeSpan.Zero);
+
+        var status = new PedidoStatus(2, 1, EstadoPedido.Processando, registradoEm, "Em processamento");
+
+        Assert.Equal(2, status.Id);
+        Assert.Equal(1, status.PedidoId);
+        Assert.Equal(EstadoPedido.Processando, status.Status);
+        Assert.Equal(registradoEm, status.RegistradoEm);
+        Assert.Equal("Em processamento", status.Detalhe);
+        Assert.Null(status.Pedido);
+    }
+
+    [Fact]
+    public void ApplicationDbContext_deve_mapear_historico_e_rejeitar_alteracoes()
+    {
+        var opcoes = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseNpgsql("Host=localhost;Database=modelo;Username=dev;Password=dev")
+            .Options;
+        using var contexto = new ApplicationDbContext(opcoes);
+        var status = new PedidoStatus(2, 1, EstadoPedido.Recebido, DateTimeOffset.UtcNow);
+
+        var tipoEntidade = contexto.Model.FindEntityType(typeof(PedidoStatus));
+        Assert.NotNull(tipoEntidade);
+        Assert.Equal("pedido_status", tipoEntidade.GetTableName());
+
+        contexto.Attach(status);
+        contexto.Entry(status).State = EntityState.Modified;
+
+        var excecao = Assert.Throws<InvalidOperationException>(() => contexto.SaveChanges());
+        Assert.Equal("O historico de status do pedido e imutavel.", excecao.Message);
+    }
+
+    [Fact]
+    public async Task ApplicationDbContext_deve_rejeitar_exclusao_assincrona_do_historico()
+    {
+        var opcoes = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseNpgsql("Host=localhost;Database=modelo;Username=dev;Password=dev")
+            .Options;
+        await using var contexto = new ApplicationDbContext(opcoes);
+        contexto.Attach(new PedidoStatus(2, 1, EstadoPedido.Recebido, DateTimeOffset.UtcNow));
+        contexto.Entry(contexto.PedidoStatus.Local.Single()).State = EntityState.Deleted;
+
+        var excecao = await Assert.ThrowsAsync<InvalidOperationException>(() => contexto.SaveChangesAsync());
+
+        Assert.Equal("O historico de status do pedido e imutavel.", excecao.Message);
     }
 }

@@ -288,6 +288,8 @@ FakesAssemblies/
 .ntvs_analysis.dat
 node_modules/
 src/ES2-SistemaPedidos.FrontEnd/coverage/
+src/ES2-SistemaPedidos.FrontEnd/dist/
+src/ES2-SistemaPedidos.FrontEnd/script.js
 src/ES2-SistemaPedidos.FrontEnd/script.js.map
 
 # Visual Studio 6 build log

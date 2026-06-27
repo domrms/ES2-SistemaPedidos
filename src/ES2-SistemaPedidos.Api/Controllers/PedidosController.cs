@@ -1,8 +1,6 @@
-using System.Data.Common;
 using Amazon.Runtime;
 using ES2_SistemaPedidos.Api.Application.Pedidos;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace ES2_SistemaPedidos.Api.Controllers;
 
@@ -12,50 +10,65 @@ public sealed class PedidosController(PedidoService pedidoService) : ControllerB
 {
     [HttpPost]
     public async Task<IActionResult> CriarSolicitacaoAsync(RequisicaoCriarSolicitacao requisicao,
-        CancellationToken tokenCancelamento)
+        CancellationToken cancellationToken)
     {
-        Resultado<RespostaCriarSolicitacao> resultado;
+        Resultado<RespostaCriarSolicitacao> result;
         try
         {
-            resultado = await pedidoService.CriarSolicitacaoAsync(requisicao, tokenCancelamento);
+            result = await pedidoService.CriarSolicitacaoAsync(requisicao, cancellationToken);
         }
-        catch (Exception excecao) when (IsFalhaDependencia(excecao))
+        catch (Exception exception) when (IsDependencyFailure(exception))
         {
-            return StatusCode(
-                StatusCodes.Status503ServiceUnavailable,
-                new RespostaErro("ServicoIndisponivel", "Banco de dados ou mensageria temporariamente indisponivel",
+            return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                new RespostaErro("ServicoIndisponivel",
+                    "API de persistencia ou mensageria temporariamente indisponivel",
                     new { tentarNovamenteApos = 30 }));
         }
 
-        return resultado.Match<IActionResult>(
-            Accepted,
-            BadRequest);
+        return result.Match<IActionResult>(Accepted, BadRequest);
     }
 
     [HttpGet("eventos")]
-    public async Task<IActionResult> ListarEventosAsync(CancellationToken tokenCancelamento)
+    public async Task<IActionResult> ListarEventosAsync(CancellationToken cancellationToken)
     {
         try
         {
-            var resposta = await pedidoService.ListarEventosAsync(tokenCancelamento);
-            return Ok(resposta);
+            return Ok(await pedidoService.ListarEventosAsync(cancellationToken));
         }
-        catch (Exception excecao) when (IsFalhaDependencia(excecao))
+        catch (Exception exception) when (IsDependencyFailure(exception))
         {
-            return StatusCode(
-                StatusCodes.Status503ServiceUnavailable,
-                new RespostaErro("ServicoIndisponivel", "Banco de dados temporariamente indisponivel",
+            return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                new RespostaErro("ServicoIndisponivel", "API de persistencia temporariamente indisponivel",
                     new { tentarNovamenteApos = 30 }));
         }
     }
 
-    private static bool IsFalhaDependencia(Exception excecao)
+    [HttpGet("{id:long}/historico")]
+    public async Task<IActionResult> ObterHistoricoAsync(long id, CancellationToken cancellationToken)
     {
-        return excecao is DbUpdateException
-                   or DbException
-                   or AmazonServiceException
-                   or HttpRequestException
-               || (excecao is InvalidOperationException invalidOperationException
+        try
+        {
+            var result = await pedidoService.ObterHistoricoAsync(id, cancellationToken);
+            return result.Tipo switch
+            {
+                TipoResultadoConsulta.Sucesso => Ok(result.Valor),
+                TipoResultadoConsulta.RequisicaoInvalida => BadRequest(result.Erro),
+                TipoResultadoConsulta.NaoEncontrado => NotFound(result.Erro),
+                _ => throw new InvalidOperationException("Tipo de resultado de consulta desconhecido.")
+            };
+        }
+        catch (Exception exception) when (IsDependencyFailure(exception))
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                new RespostaErro("ServicoIndisponivel", "API de persistencia temporariamente indisponivel",
+                    new { tentarNovamenteApos = 30 }));
+        }
+    }
+
+    private static bool IsDependencyFailure(Exception exception)
+    {
+        return exception is AmazonServiceException or HttpRequestException
+               || (exception is InvalidOperationException invalidOperationException
                    && invalidOperationException.Message.Contains("SQS", StringComparison.OrdinalIgnoreCase));
     }
 }

@@ -11,3 +11,14 @@ public sealed record EventoSolicitacaoCliente(
     string EventoId,
     [property: JsonPropertyName("dataHoraRequisicao")]
     DateTimeOffset DataHoraRequisicao);
+
+public sealed record RequisicaoProcessamentoPedido(
+    int ClienteId,
+    int ProdutoId,
+    string EventoId,
+    DateTimeOffset DataHoraEvento,
+    DateTimeOffset SalvoEm);
+
+public sealed record RequisicaoErroProcessamentoPedido(
+    RequisicaoProcessamentoPedido Pedido,
+    string Detalhe);

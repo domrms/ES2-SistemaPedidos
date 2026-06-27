@@ -3,77 +3,115 @@ using Amazon;
 using Amazon.SQS;
 using ES2_SistemaPedidos.Api.Application.Abstractions;
 using ES2_SistemaPedidos.Api.Application.Pedidos;
+using ES2_SistemaPedidos.Api.Infrastructure.Health;
 using ES2_SistemaPedidos.Api.Infrastructure.Messaging;
-using ES2_SistemaPedidos.Shared;
+using ES2_SistemaPedidos.Api.Infrastructure.Persistencia;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Serilog;
 
-var construtorAplicacao = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
 Log.Logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(construtorAplicacao.Configuration)
+    .ReadFrom.Configuration(builder.Configuration)
     .CreateLogger();
 
-construtorAplicacao.Host.UseSerilog((contexto, servicos, configuracaoLog) =>
+builder.Host.UseSerilog((context, _, loggerConfiguration) =>
 {
-    configuracaoLog
-        .ReadFrom.Configuration(contexto.Configuration);
+    loggerConfiguration.ReadFrom.Configuration(context.Configuration);
 });
 
-construtorAplicacao.Services.AddCors(opcoes =>
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>()
+    ?.Where(origin => !string.IsNullOrWhiteSpace(origin))
+    .ToArray() ?? [];
+
+if (allowedOrigins.Length == 0)
+    throw new InvalidOperationException(
+        "Nenhuma origem CORS foi configurada. Defina Cors:AllowedOrigins com origens confiaveis.");
+
+if (allowedOrigins.Any(origin =>
+        !Uri.TryCreate(origin, UriKind.Absolute, out var uri)
+        || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
+        || origin.Contains('*', StringComparison.Ordinal)))
+    throw new InvalidOperationException(
+        "Cors:AllowedOrigins contem uma origem invalida. Use apenas origens HTTP ou HTTPS explicitas.");
+
+builder.Services.AddCors(options =>
 {
-    opcoes.AddPolicy("AllowOrigins", construtor =>
+    options.AddPolicy("AllowOrigins", policyBuilder =>
     {
-        construtor
-            .AllowAnyOrigin()
-            .AllowAnyMethod()
-            .AllowAnyHeader();
+        policyBuilder
+            .WithOrigins(allowedOrigins)
+            .WithMethods(HttpMethods.Get, HttpMethods.Post)
+            .WithHeaders("Accept", "Content-Type");
     });
 });
 
-construtorAplicacao.Services
+builder.Services
     .AddControllers()
-    .AddJsonOptions(opcoes => { opcoes.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()); });
+    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
-construtorAplicacao.Services.AddEndpointsApiExplorer();
-construtorAplicacao.Services.AddSwaggerGen();
-construtorAplicacao.Services.AddPersistenciaPedidos(construtorAplicacao.Configuration);
-construtorAplicacao.Services.AddScoped<PedidoService>();
-construtorAplicacao.Services.AddSingleton(TimeProvider.System);
-construtorAplicacao.Services.AddSingleton<IPublicadorEventoSolicitacao, PedidoPublisherEventSqs>();
-construtorAplicacao.Services.AddSingleton<IAmazonSQS>(_ =>
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+builder.Services.AddScoped<PedidoService>();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<IPublicadorEventoSolicitacao, PedidoPublisherEventSqs>();
+builder.Services.AddHttpClient<IPersistenciaPedidosClient, PersistenciaPedidosHttpClient>(client =>
 {
-    var nomeRegiao = construtorAplicacao.Configuration["AWS_REGIAO"]
-                     ?? construtorAplicacao.Configuration["AWS_REGION"]
-                     ?? construtorAplicacao.Configuration["AWS:Regiao"]
-                     ?? construtorAplicacao.Configuration["AWS:Region"];
-    if (string.IsNullOrWhiteSpace(nomeRegiao))
+    var baseUrl = builder.Configuration["PersistenciaApi:UrlBase"]
+                  ?? throw new InvalidOperationException("URL da API de persistencia nao configurada.");
+    client.BaseAddress = new Uri(baseUrl);
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
+builder.Services.AddHttpClient("FlociHealthCheck",
+    client => client.Timeout = TimeSpan.FromSeconds(5));
+builder.Services.AddHttpClient(nameof(PersistenciaApiHealthCheck), client =>
+{
+    var baseUrl = builder.Configuration["PersistenciaApi:UrlBase"]
+                  ?? throw new InvalidOperationException("URL da API de persistencia nao configurada.");
+    client.BaseAddress = new Uri(baseUrl);
+    client.Timeout = TimeSpan.FromSeconds(5);
+});
+builder.Services.AddHealthChecks()
+    .AddCheck<PersistenciaApiHealthCheck>("persistencia-api", tags: ["ready"])
+    .AddCheck<FlociHealthCheck>("floci", tags: ["ready"]);
+builder.Services.AddSingleton<IAmazonSQS>(_ =>
+{
+    var regionName = builder.Configuration["AWS_REGIAO"]
+                     ?? builder.Configuration["AWS_REGION"]
+                     ?? builder.Configuration["AWS:Regiao"]
+                     ?? builder.Configuration["AWS:Region"];
+    if (string.IsNullOrWhiteSpace(regionName))
         throw new InvalidOperationException("Regiao AWS nao configurada. Defina AWS:Regiao.");
 
-    var urlServico = construtorAplicacao.Configuration["AWS_ENDPOINT_URL"]
-                     ?? construtorAplicacao.Configuration["AWS:ServiceUrl"]
-                     ?? construtorAplicacao.Configuration["AWS:EndpointUrl"];
+    var serviceUrl = builder.Configuration["AWS_ENDPOINT_URL"]
+                     ?? builder.Configuration["AWS:ServiceUrl"]
+                     ?? builder.Configuration["AWS:EndpointUrl"];
 
-    var configuracaoSqs = new AmazonSQSConfig();
-    if (string.IsNullOrWhiteSpace(urlServico))
+    var sqsConfiguration = new AmazonSQSConfig();
+    if (string.IsNullOrWhiteSpace(serviceUrl))
     {
-        configuracaoSqs.RegionEndpoint = RegionEndpoint.GetBySystemName(nomeRegiao);
+        sqsConfiguration.RegionEndpoint = RegionEndpoint.GetBySystemName(regionName);
     }
     else
     {
-        configuracaoSqs.ServiceURL = urlServico;
-        configuracaoSqs.AuthenticationRegion = nomeRegiao;
+        sqsConfiguration.ServiceURL = serviceUrl;
+        sqsConfiguration.AuthenticationRegion = regionName;
     }
 
-    return new AmazonSQSClient(configuracaoSqs);
+    return new AmazonSQSClient(sqsConfiguration);
 });
 
-var aplicacao = construtorAplicacao.Build();
+var app = builder.Build();
 
-aplicacao.UseSwagger();
-aplicacao.UseSwaggerUI();
-aplicacao.UseCors("AllowOrigins");
-aplicacao.MapControllers();
+app.UseSwagger();
+app.UseSwaggerUI();
+app.UseCors("AllowOrigins");
+app.MapControllers();
+app.MapHealthChecks("/api/healthcheck", new HealthCheckOptions
+{
+    ResponseWriter = HealthCheckResponseWriter.WriteAsync
+});
 
-aplicacao.Run();
-
-public partial class Program;
+await app.RunAsync();

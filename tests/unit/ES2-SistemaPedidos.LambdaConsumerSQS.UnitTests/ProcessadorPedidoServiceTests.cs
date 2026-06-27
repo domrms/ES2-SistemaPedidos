@@ -14,7 +14,7 @@ public sealed class ProcessadorPedidoServiceTests
     [Fact]
     public async Task ProcessMessageAsync_quando_payload_valido_registra_evento_e_retorna_true()
     {
-        var repository = new FakePedidoProcessamentoRepository();
+        var repository = new FakePedidoProcessamentoClient();
         var servico = CriarServico(repository);
         var evento = new EventoSolicitacaoCliente(
             3,
@@ -43,7 +43,7 @@ public sealed class ProcessadorPedidoServiceTests
     [InlineData("""{"clienteId":1,"produtoId":2,"eventoId":"   ","dataHoraRequisicao":"2026-05-03T12:30:00-03:00"}""")]
     public async Task ProcessMessageAsync_quando_payload_invalido_retorna_false_sem_registrar_evento(string corpo)
     {
-        var repository = new FakePedidoProcessamentoRepository();
+        var repository = new FakePedidoProcessamentoClient();
         var servico = CriarServico(repository);
 
         var processada = await servico.ProcessMessageAsync("mensagem-2", corpo, CancellationToken.None);
@@ -55,7 +55,7 @@ public sealed class ProcessadorPedidoServiceTests
     [Fact]
     public async Task ProcessMessageAsync_quando_payload_null_retorna_false_sem_registrar_evento()
     {
-        var repository = new FakePedidoProcessamentoRepository();
+        var repository = new FakePedidoProcessamentoClient();
         var servico = CriarServico(repository);
 
         var processada = await servico.ProcessMessageAsync("mensagem-3", "null", CancellationToken.None);
@@ -64,7 +64,24 @@ public sealed class ProcessadorPedidoServiceTests
         Assert.Empty(repository.Eventos);
     }
 
-    private static ProcessadorPedidoService CriarServico(FakePedidoProcessamentoRepository repository)
+    [Fact]
+    public async Task ProcessMessageAsync_quando_processamento_falha_registra_erro_e_preserva_excecao()
+    {
+        var repository = new FakePedidoProcessamentoClient { FalharAoRegistrar = true };
+        var servico = CriarServico(repository);
+        var evento = new EventoSolicitacaoCliente(3, 4, "ES2-12345678-123000", AgoraUtc);
+        var corpo = JsonSerializer.Serialize(evento, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            servico.ProcessMessageAsync("mensagem-4", corpo, CancellationToken.None));
+
+        Assert.Equal("Falha ao processar o evento ES2-12345678-123000.", exception.Message);
+        Assert.Equal("Falha simulada", exception.InnerException?.Message);
+        Assert.Single(repository.Erros);
+        Assert.Equal("Falha durante o processamento da solicitacao.", repository.Erros[0].Detalhe);
+    }
+
+    private static ProcessadorPedidoService CriarServico(FakePedidoProcessamentoClient repository)
     {
         return new ProcessadorPedidoService(
             repository,
@@ -72,13 +89,25 @@ public sealed class ProcessadorPedidoServiceTests
             NullLogger<ProcessadorPedidoService>.Instance);
     }
 
-    private sealed class FakePedidoProcessamentoRepository : IPedidoProcessamentoRepository
+    private sealed class FakePedidoProcessamentoClient : IPedidoProcessamentoClient
     {
+        public bool FalharAoRegistrar { get; init; }
+
         public List<EventoProcessamento> Eventos { get; } = [];
+
+        public List<(EventoProcessamento Evento, string Detalhe)> Erros { get; } = [];
 
         public Task RegistrarEventoAsync(EventoProcessamento evento, CancellationToken tokenCancelamento)
         {
+            if (FalharAoRegistrar) throw new InvalidOperationException("Falha simulada");
             Eventos.Add(evento);
+            return Task.CompletedTask;
+        }
+
+        public Task RegistrarErroAsync(EventoProcessamento evento, string detalhe,
+            CancellationToken tokenCancelamento)
+        {
+            Erros.Add((evento, detalhe));
             return Task.CompletedTask;
         }
     }
