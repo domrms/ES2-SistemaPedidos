@@ -10,20 +10,20 @@ namespace ES2_SistemaPedidos.LambdaConsumerSQS;
 [ExcludeFromCodeCoverage]
 public static class DependencyInjection
 {
-    public static IServiceCollection AddProcessamentoPedidos(this IServiceCollection servicos,
-        IConfiguration configuracao)
+    public static IServiceCollection AddProcessamentoPedidos(this IServiceCollection services,
+        IConfiguration configuration)
     {
-        servicos.AddSingleton(TimeProvider.System);
-        var urlBase = configuracao["PersistenciaApi:UrlBase"]
-                      ?? "http://localhost:5080";
-        servicos.AddSingleton(new HttpClient
+        services.AddSingleton(TimeProvider.System);
+        var baseUrl = configuration["PersistenciaApi:UrlBase"]
+                      ?? throw new InvalidOperationException("URL da API de persistencia nao configurada.");
+        services.AddSingleton(new HttpClient
         {
-            BaseAddress = new Uri(urlBase),
+            BaseAddress = new Uri(baseUrl),
             Timeout = TimeSpan.FromSeconds(15)
         });
-        servicos.AddScoped<IPedidoProcessamentoClient, PedidoProcessamentoHttpClient>();
-        servicos.AddScoped<ProcessadorPedidoService>();
+        services.AddScoped<IPedidoProcessamentoClient, PedidoProcessamentoHttpClient>();
+        services.AddScoped<ProcessadorPedidoService>();
 
-        return servicos;
+        return services;
     }
 }

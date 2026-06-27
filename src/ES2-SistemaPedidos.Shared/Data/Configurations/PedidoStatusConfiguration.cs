@@ -6,23 +6,23 @@ namespace ES2_SistemaPedidos.Shared.Data.Configurations;
 
 public sealed class PedidoStatusConfiguration : IEntityTypeConfiguration<PedidoStatus>
 {
-    public void Configure(EntityTypeBuilder<PedidoStatus> construtor)
+    public void Configure(EntityTypeBuilder<PedidoStatus> builder)
     {
-        construtor.ToTable("pedido_status");
-        construtor.HasKey(status => status.Id);
-        construtor.Property(status => status.Id).HasColumnName("id");
-        construtor.Property(status => status.PedidoId).HasColumnName("pedido_id").IsRequired();
-        construtor.Property(status => status.Status)
+        builder.ToTable("pedido_status");
+        builder.HasKey(status => status.Id);
+        builder.Property(status => status.Id).HasColumnName("id");
+        builder.Property(status => status.PedidoId).HasColumnName("pedido_id").IsRequired();
+        builder.Property(status => status.Status)
             .HasColumnName("status")
             .HasConversion<string>()
             .HasMaxLength(20)
             .IsRequired();
-        construtor.Property(status => status.RegistradoEm).HasColumnName("registrado_em").IsRequired();
-        construtor.Property(status => status.Detalhe).HasColumnName("detalhe").HasMaxLength(500);
-        construtor.HasIndex(status => new { status.PedidoId, status.Id });
-        construtor.HasIndex(status => new { status.PedidoId, status.Status }).IsUnique();
+        builder.Property(status => status.RegistradoEm).HasColumnName("registrado_em").IsRequired();
+        builder.Property(status => status.Detalhe).HasColumnName("detalhe").HasMaxLength(500);
+        builder.HasIndex(status => new { status.PedidoId, status.Id });
+        builder.HasIndex(status => new { status.PedidoId, status.Status }).IsUnique();
 
-        construtor.HasOne(status => status.Pedido)
+        builder.HasOne(status => status.Pedido)
             .WithMany(pedido => pedido.HistoricoStatus)
             .HasForeignKey(status => status.PedidoId)
             .OnDelete(DeleteBehavior.Cascade);

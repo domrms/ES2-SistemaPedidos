@@ -9,31 +9,40 @@ public sealed class ConsultaService(
     IEventoRepositorio eventos,
     IPedidoStatusRepositorio status,
     IMemoryCache cache,
-    IConfiguration configuracao)
+    IConfiguration configuration)
 {
-    public Task<bool> ExisteClienteAsync(int clienteId, CancellationToken tokenCancelamento) =>
-        ObterOuCriarAsync($"cliente:{clienteId}",
-            token => clientes.ExisteAsync(clienteId, token), tokenCancelamento);
+    public Task<bool> ExisteClienteAsync(int clienteId, CancellationToken cancellationToken)
+    {
+        return GetOrCreateAsync($"cliente:{clienteId}",
+            token => clientes.ExisteAsync(clienteId, token), cancellationToken);
+    }
 
-    public Task<bool> ExisteProdutoAsync(int produtoId, CancellationToken tokenCancelamento) =>
-        ObterOuCriarAsync($"produto:{produtoId}",
-            token => produtos.ExisteAsync(produtoId, token), tokenCancelamento);
+    public Task<bool> ExisteProdutoAsync(int produtoId, CancellationToken cancellationToken)
+    {
+        return GetOrCreateAsync($"produto:{produtoId}",
+            token => produtos.ExisteAsync(produtoId, token), cancellationToken);
+    }
 
-    public Task<IReadOnlyCollection<EventoDetalhado>> ListarEventosAsync(CancellationToken tokenCancelamento) =>
-        eventos.ListarTodosAsync(tokenCancelamento);
+    public Task<IReadOnlyCollection<EventoDetalhado>> ListarEventosAsync(CancellationToken cancellationToken)
+    {
+        return eventos.ListarTodosAsync(cancellationToken);
+    }
 
     public Task<HistoricoPedidoDetalhado?> ObterHistoricoAsync(long pedidoId,
-        CancellationToken tokenCancelamento) => status.ObterHistoricoAsync(pedidoId, tokenCancelamento);
-
-    private async Task<bool> ObterOuCriarAsync(string chave,
-        Func<CancellationToken, Task<bool>> fabrica,
-        CancellationToken tokenCancelamento)
+        CancellationToken cancellationToken)
     {
-        if (cache.TryGetValue(chave, out bool valor)) return valor;
+        return status.ObterHistoricoAsync(pedidoId, cancellationToken);
+    }
 
-        valor = await fabrica(tokenCancelamento);
-        var segundos = configuracao.GetValue("Cache:DuracaoSegundos", 300);
-        cache.Set(chave, valor, TimeSpan.FromSeconds(segundos));
-        return valor;
+    private async Task<bool> GetOrCreateAsync(string key,
+        Func<CancellationToken, Task<bool>> factory,
+        CancellationToken cancellationToken)
+    {
+        if (cache.TryGetValue(key, out bool value)) return value;
+
+        value = await factory(cancellationToken);
+        var durationSeconds = configuration.GetValue("Cache:DuracaoSegundos", 300);
+        cache.Set(key, value, TimeSpan.FromSeconds(durationSeconds));
+        return value;
     }
 }

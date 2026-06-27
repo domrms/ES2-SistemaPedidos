@@ -8,21 +8,21 @@ namespace ES2_SistemaPedidos.LambdaConsumerSQS.Application.Services;
 
 public sealed class ProcessadorPedidoService(
     IPedidoProcessamentoClient clienteProcessamento,
-    TimeProvider provedorTempo,
-    ILogger<ProcessadorPedidoService> registrador)
+    TimeProvider timeProvider,
+    ILogger<ProcessadorPedidoService> logger)
 {
-    private static readonly JsonSerializerOptions OpcoesJson = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
-    public async Task<bool> ProcessMessageAsync(string mensagemSqsId, string corpoMensagem,
-        CancellationToken tokenCancelamento)
+    public async Task<bool> ProcessMessageAsync(string sqsMessageId, string messageBody,
+        CancellationToken cancellationToken)
     {
-        var evento = JsonSerializer.Deserialize<EventoSolicitacaoCliente>(corpoMensagem, OpcoesJson);
+        var evento = JsonSerializer.Deserialize<EventoSolicitacaoCliente>(messageBody, JsonOptions);
         if (evento is null
             || evento.ClienteId <= 0
             || evento.ProdutoId <= 0
             || string.IsNullOrWhiteSpace(evento.EventoId))
         {
-            registrador.LogWarning("Mensagem {MensagemId} possui payload invalido", mensagemSqsId);
+            logger.LogWarning("Mensagem {MensagemId} possui payload invalido", sqsMessageId);
             return false;
         }
 
@@ -31,32 +31,31 @@ public sealed class ProcessadorPedidoService(
             evento.ProdutoId,
             evento.EventoId,
             evento.DataHoraRequisicao,
-            provedorTempo.GetUtcNow());
+            timeProvider.GetUtcNow());
 
         try
         {
-            await clienteProcessamento.RegistrarEventoAsync(processamento, tokenCancelamento);
+            await clienteProcessamento.RegistrarEventoAsync(processamento, cancellationToken);
         }
-        catch (Exception excecao)
+        catch (Exception exception)
         {
-            registrador.LogError(excecao, "Falha ao processar o evento {EventoId}", evento.EventoId);
             try
             {
                 await clienteProcessamento.RegistrarErroAsync(
                     processamento,
                     "Falha durante o processamento da solicitacao.",
-                    tokenCancelamento);
+                    cancellationToken);
             }
-            catch (Exception falhaRegistroErro)
+            catch (Exception errorRegistrationException)
             {
-                registrador.LogError(falhaRegistroErro,
+                logger.LogError(errorRegistrationException,
                     "Nao foi possivel registrar o estado de erro do evento {EventoId}", evento.EventoId);
             }
 
-            throw;
+            throw new InvalidOperationException($"Falha ao processar o evento {evento.EventoId}.", exception);
         }
 
-        registrador.LogInformation(
+        logger.LogInformation(
             "Evento {EventoId} do cliente {ClienteId} e produto {ProdutoId} salvo no banco",
             evento.EventoId,
             evento.ClienteId,

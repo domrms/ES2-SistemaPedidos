@@ -5,28 +5,34 @@ namespace ES2_SistemaPedidos.PersistenciaApi.Controllers;
 
 [ApiController]
 [Route("api/consultas")]
-public sealed class ConsultasController(ConsultaService servico) : ControllerBase
+public sealed class ConsultasController(ConsultaService service) : ControllerBase
 {
     [HttpGet("clientes/{id:int}/existe")]
     public async Task<ActionResult<RespostaExistencia>> ExisteClienteAsync(int id,
-        CancellationToken tokenCancelamento) =>
-        Ok(new RespostaExistencia(await servico.ExisteClienteAsync(id, tokenCancelamento)));
+        CancellationToken cancellationToken)
+    {
+        return Ok(new RespostaExistencia(await service.ExisteClienteAsync(id, cancellationToken)));
+    }
 
     [HttpGet("produtos/{id:int}/existe")]
     public async Task<ActionResult<RespostaExistencia>> ExisteProdutoAsync(int id,
-        CancellationToken tokenCancelamento) =>
-        Ok(new RespostaExistencia(await servico.ExisteProdutoAsync(id, tokenCancelamento)));
+        CancellationToken cancellationToken)
+    {
+        return Ok(new RespostaExistencia(await service.ExisteProdutoAsync(id, cancellationToken)));
+    }
 
     [HttpGet("eventos")]
     public async Task<ActionResult<RespostaListarEventos>> ListarEventosAsync(
-        CancellationToken tokenCancelamento) =>
-        Ok(new RespostaListarEventos(await servico.ListarEventosAsync(tokenCancelamento)));
+        CancellationToken cancellationToken)
+    {
+        return Ok(new RespostaListarEventos(await service.ListarEventosAsync(cancellationToken)));
+    }
 
     [HttpGet("pedidos/{id:long}/historico")]
     public async Task<ActionResult<HistoricoPedidoDetalhado>> ObterHistoricoAsync(long id,
-        CancellationToken tokenCancelamento)
+        CancellationToken cancellationToken)
     {
-        var historico = await servico.ObterHistoricoAsync(id, tokenCancelamento);
+        var historico = await service.ObterHistoricoAsync(id, cancellationToken);
         return historico is null ? NotFound() : Ok(historico);
     }
 }

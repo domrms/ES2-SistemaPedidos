@@ -1,6 +1,11 @@
+using ES2_SistemaPedidos.Shared.Domain;
+using System.Text.Json.Serialization;
+
 namespace ES2_SistemaPedidos.Api;
 
-public sealed record RequisicaoCriarSolicitacao(int ClienteId, int ProdutoId);
+public sealed record RequisicaoCriarSolicitacao(
+    [property: JsonRequired] int ClienteId,
+    [property: JsonRequired] int ProdutoId);
 
 public sealed record RespostaCriarSolicitacao(
     int ClienteId,
@@ -26,7 +31,7 @@ public sealed record RespostaHistoricoPedido(
 
 public sealed record RespostaTransicaoPedido(
     long Id,
-    Shared.Domain.EstadoPedido Status,
+    EstadoPedido Status,
     DateTimeOffset RegistradoEm,
     string? Detalhe);
 
@@ -39,13 +44,20 @@ public enum TipoResultadoConsulta
 
 public sealed record ResultadoConsulta<T>(TipoResultadoConsulta Tipo, T? Valor, RespostaErro? Erro)
 {
-    public static ResultadoConsulta<T> Sucesso(T valor) => new(TipoResultadoConsulta.Sucesso, valor, null);
+    public static ResultadoConsulta<T> Sucesso(T value)
+    {
+        return new ResultadoConsulta<T>(TipoResultadoConsulta.Sucesso, value, null);
+    }
 
-    public static ResultadoConsulta<T> RequisicaoInvalida(RespostaErro erro) =>
-        new(TipoResultadoConsulta.RequisicaoInvalida, default, erro);
+    public static ResultadoConsulta<T> RequisicaoInvalida(RespostaErro error)
+    {
+        return new ResultadoConsulta<T>(TipoResultadoConsulta.RequisicaoInvalida, default, error);
+    }
 
-    public static ResultadoConsulta<T> NaoEncontrado(RespostaErro erro) =>
-        new(TipoResultadoConsulta.NaoEncontrado, default, erro);
+    public static ResultadoConsulta<T> NaoEncontrado(RespostaErro error)
+    {
+        return new ResultadoConsulta<T>(TipoResultadoConsulta.NaoEncontrado, default, error);
+    }
 }
 
 public sealed record RespostaErro(

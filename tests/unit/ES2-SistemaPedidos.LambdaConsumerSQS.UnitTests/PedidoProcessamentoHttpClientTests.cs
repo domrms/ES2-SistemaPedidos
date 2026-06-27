@@ -46,8 +46,11 @@ public sealed class PedidoProcessamentoHttpClientTests
             cliente.RegistrarEventoAsync(Evento, CancellationToken.None));
     }
 
-    private static PedidoProcessamentoHttpClient CriarCliente(HttpMessageHandler manipulador) =>
-        new(new HttpClient(manipulador) { BaseAddress = new Uri("http://persistencia/") });
+    private static PedidoProcessamentoHttpClient CriarCliente(HttpMessageHandler manipulador)
+    {
+        return new PedidoProcessamentoHttpClient(new HttpClient(manipulador)
+            { BaseAddress = new Uri("http://persistencia/") });
+    }
 
     private sealed class FakeHttpMessageHandler(HttpStatusCode statusCode) : HttpMessageHandler
     {

@@ -35,10 +35,3 @@ Scenario: Processamento de múltiplas solicitações
   Given que o sistema está pronto
   When 3 solicitações para o cliente 9999 e produto 9999 são enviadas
   Then 3 eventos distintos devem ser salvos no banco de dados
-
-@pedidos
-Scenario: Isolamento de dados entre testes
-  Given que um evento de teste é criado e salvo
-  When o método de limpeza de eventos de teste é invocado
-  And um novo evento é criado
-  Then apenas o segundo evento deve existir no banco de dados

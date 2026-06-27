@@ -5,41 +5,45 @@ namespace ES2_SistemaPedidos.PersistenciaApi.Data;
 
 public interface IClienteRepositorio
 {
-    Task<bool> ExisteAsync(int clienteId, CancellationToken tokenCancelamento);
+    Task<bool> ExisteAsync(int clienteId, CancellationToken cancellationToken);
 }
 
 public interface IProdutoRepositorio
 {
-    Task<bool> ExisteAsync(int produtoId, CancellationToken tokenCancelamento);
+    Task<bool> ExisteAsync(int produtoId, CancellationToken cancellationToken);
 }
 
 public interface IEventoRepositorio
 {
-    Task<IReadOnlyCollection<EventoDetalhado>> ListarTodosAsync(CancellationToken tokenCancelamento);
+    Task<IReadOnlyCollection<EventoDetalhado>> ListarTodosAsync(CancellationToken cancellationToken);
 }
 
 public interface IPedidoStatusRepositorio
 {
-    Task<HistoricoPedidoDetalhado?> ObterHistoricoAsync(long pedidoId, CancellationToken tokenCancelamento);
+    Task<HistoricoPedidoDetalhado?> ObterHistoricoAsync(long pedidoId, CancellationToken cancellationToken);
 }
 
-public sealed class ClienteRepositorio(ApplicationDbContext contextoBanco) : IClienteRepositorio
+public sealed class ClienteRepositorio(ApplicationDbContext dbContext) : IClienteRepositorio
 {
-    public Task<bool> ExisteAsync(int clienteId, CancellationToken tokenCancelamento) =>
-        contextoBanco.Clientes.AsNoTracking().AnyAsync(cliente => cliente.Id == clienteId, tokenCancelamento);
-}
-
-public sealed class ProdutoRepositorio(ApplicationDbContext contextoBanco) : IProdutoRepositorio
-{
-    public Task<bool> ExisteAsync(int produtoId, CancellationToken tokenCancelamento) =>
-        contextoBanco.Produtos.AsNoTracking().AnyAsync(produto => produto.Id == produtoId, tokenCancelamento);
-}
-
-public sealed class EventoRepositorio(ApplicationDbContext contextoBanco) : IEventoRepositorio
-{
-    public async Task<IReadOnlyCollection<EventoDetalhado>> ListarTodosAsync(CancellationToken tokenCancelamento)
+    public Task<bool> ExisteAsync(int clienteId, CancellationToken cancellationToken)
     {
-        var eventos = await contextoBanco.Eventos
+        return dbContext.Clientes.AsNoTracking().AnyAsync(cliente => cliente.Id == clienteId, cancellationToken);
+    }
+}
+
+public sealed class ProdutoRepositorio(ApplicationDbContext dbContext) : IProdutoRepositorio
+{
+    public Task<bool> ExisteAsync(int produtoId, CancellationToken cancellationToken)
+    {
+        return dbContext.Produtos.AsNoTracking().AnyAsync(produto => produto.Id == produtoId, cancellationToken);
+    }
+}
+
+public sealed class EventoRepositorio(ApplicationDbContext dbContext) : IEventoRepositorio
+{
+    public async Task<IReadOnlyCollection<EventoDetalhado>> ListarTodosAsync(CancellationToken cancellationToken)
+    {
+        var eventos = await dbContext.Eventos
             .AsNoTracking()
             .OrderBy(evento => evento.SalvoEm)
             .Select(evento => new EventoDetalhado(
@@ -49,21 +53,21 @@ public sealed class EventoRepositorio(ApplicationDbContext contextoBanco) : IEve
                 evento.EventoId,
                 evento.DataHoraEvento,
                 evento.SalvoEm))
-            .ToListAsync(tokenCancelamento);
+            .ToListAsync(cancellationToken);
 
         return eventos.AsReadOnly();
     }
 }
 
-public sealed class PedidoStatusRepositorio(ApplicationDbContext contextoBanco) : IPedidoStatusRepositorio
+public sealed class PedidoStatusRepositorio(ApplicationDbContext dbContext) : IPedidoStatusRepositorio
 {
     public async Task<HistoricoPedidoDetalhado?> ObterHistoricoAsync(long pedidoId,
-        CancellationToken tokenCancelamento)
+        CancellationToken cancellationToken)
     {
-        var pedido = await contextoBanco.Eventos
+        var pedido = await dbContext.Eventos
             .AsNoTracking()
             .Include(evento => evento.HistoricoStatus)
-            .SingleOrDefaultAsync(evento => evento.Id == pedidoId, tokenCancelamento);
+            .SingleOrDefaultAsync(evento => evento.Id == pedidoId, cancellationToken);
 
         if (pedido is null) return null;
 

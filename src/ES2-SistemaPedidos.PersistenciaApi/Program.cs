@@ -1,31 +1,27 @@
-using System.Diagnostics.CodeAnalysis;
 using ES2_SistemaPedidos.PersistenciaApi.Application;
 using ES2_SistemaPedidos.PersistenciaApi.Data;
 using ES2_SistemaPedidos.PersistenciaApi.Infrastructure;
 using ES2_SistemaPedidos.Shared;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
-var construtor = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
-construtor.Services.AddControllers();
-construtor.Services.AddEndpointsApiExplorer();
-construtor.Services.AddSwaggerGen();
-construtor.Services.AddMemoryCache();
-construtor.Services.AddBancoPedidos(construtor.Configuration);
-construtor.Services.AddScoped<IClienteRepositorio, ClienteRepositorio>();
-construtor.Services.AddScoped<IProdutoRepositorio, ProdutoRepositorio>();
-construtor.Services.AddScoped<IEventoRepositorio, EventoRepositorio>();
-construtor.Services.AddScoped<IPedidoStatusRepositorio, PedidoStatusRepositorio>();
-construtor.Services.AddScoped<IPedidoProcessamentoRepositorio, PedidoProcessamentoRepositorio>();
-construtor.Services.AddScoped<ConsultaService>();
-construtor.Services.AddHealthChecks().AddCheck<PostgresHealthCheck>("postgresql", tags: ["ready"]);
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+builder.Services.AddMemoryCache();
+builder.Services.AddBancoPedidos(builder.Configuration);
+builder.Services.AddScoped<IClienteRepositorio, ClienteRepositorio>();
+builder.Services.AddScoped<IProdutoRepositorio, ProdutoRepositorio>();
+builder.Services.AddScoped<IEventoRepositorio, EventoRepositorio>();
+builder.Services.AddScoped<IPedidoStatusRepositorio, PedidoStatusRepositorio>();
+builder.Services.AddScoped<IPedidoProcessamentoRepositorio, PedidoProcessamentoRepositorio>();
+builder.Services.AddScoped<ConsultaService>();
+builder.Services.AddHealthChecks().AddCheck<PostgresHealthCheck>("postgresql", tags: ["ready"]);
 
-var aplicacao = construtor.Build();
-aplicacao.UseSwagger();
-aplicacao.UseSwaggerUI();
-aplicacao.MapControllers();
-aplicacao.MapHealthChecks("/api/healthcheck", new HealthCheckOptions());
-aplicacao.Run();
-
-[ExcludeFromCodeCoverage]
-public partial class Program;
+var app = builder.Build();
+app.UseSwagger();
+app.UseSwaggerUI();
+app.MapControllers();
+app.MapHealthChecks("/api/healthcheck", new HealthCheckOptions());
+await app.RunAsync();

@@ -15,74 +15,74 @@ namespace ES2_SistemaPedidos.LambdaConsumerSQS;
 
 public sealed class Function
 {
-    private readonly IServiceProvider _servicos;
+    private readonly IServiceProvider _services;
 
     [ExcludeFromCodeCoverage]
     public Function()
-        : this(CriarServiceProvider())
+        : this(CreateServiceProvider())
     {
     }
 
-    internal Function(IServiceProvider servicos)
+    internal Function(IServiceProvider services)
     {
-        _servicos = servicos;
+        _services = services;
     }
 
-    public async Task<SQSBatchResponse> FunctionHandler(SQSEvent eventoSqs, ILambdaContext contexto)
+    public async Task<SQSBatchResponse> FunctionHandler(SQSEvent eventoSqs, ILambdaContext context)
     {
-        using var escopo = _servicos.CreateScope();
-        var processador = escopo.ServiceProvider.GetRequiredService<ProcessadorPedidoService>();
-        var registrador = escopo.ServiceProvider.GetRequiredService<ILogger<Function>>();
-        var falhas = new List<SQSBatchResponse.BatchItemFailure>();
+        using var scope = _services.CreateScope();
+        var processor = scope.ServiceProvider.GetRequiredService<ProcessadorPedidoService>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Function>>();
+        var failures = new List<SQSBatchResponse.BatchItemFailure>();
 
-        foreach (var mensagem in eventoSqs.Records)
+        foreach (var message in eventoSqs.Records)
             try
             {
-                var processada = await processador.ProcessMessageAsync(
-                    mensagem.MessageId,
-                    mensagem.Body,
+                var processed = await processor.ProcessMessageAsync(
+                    message.MessageId,
+                    message.Body,
                     CancellationToken.None);
 
-                if (!processada)
+                if (!processed)
                 {
-                    registrador.LogWarning("Mensagem {MensagemId} possui payload invalido e sera marcada como falha",
-                        mensagem.MessageId);
-                    falhas.Add(new SQSBatchResponse.BatchItemFailure
+                    logger.LogWarning("Mensagem {MensagemId} possui payload invalido e sera marcada como falha",
+                        message.MessageId);
+                    failures.Add(new SQSBatchResponse.BatchItemFailure
                     {
-                        ItemIdentifier = mensagem.MessageId
+                        ItemIdentifier = message.MessageId
                     });
                 }
             }
-            catch (Exception excecao)
+            catch (Exception exception)
             {
-                registrador.LogError(excecao,
-                    "Erro ao processar mensagem {MensagemId}; a mensagem sera marcada como falha", mensagem.MessageId);
-                falhas.Add(new SQSBatchResponse.BatchItemFailure
+                logger.LogError(exception,
+                    "Erro ao processar mensagem {MensagemId}; a mensagem sera marcada como falha", message.MessageId);
+                failures.Add(new SQSBatchResponse.BatchItemFailure
                 {
-                    ItemIdentifier = mensagem.MessageId
+                    ItemIdentifier = message.MessageId
                 });
             }
 
         return new SQSBatchResponse
         {
-            BatchItemFailures = falhas
+            BatchItemFailures = failures
         };
     }
 
     [ExcludeFromCodeCoverage]
-    private static IServiceProvider CriarServiceProvider()
+    private static ServiceProvider CreateServiceProvider()
     {
-        var ambiente = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+        var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
                        ?? Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
                        ?? "Production";
 
-        var diretorioAssembly = Path.GetDirectoryName(typeof(Function).Assembly.Location)
+        var assemblyDirectory = Path.GetDirectoryName(typeof(Function).Assembly.Location)
                                 ?? AppContext.BaseDirectory;
 
-        var configuracao = new ConfigurationBuilder()
-            .SetBasePath(diretorioAssembly)
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(assemblyDirectory)
             .AddJsonFile("appsettings.json", false, false)
-            .AddJsonFile($"appsettings.{ambiente}.json", true, false)
+            .AddJsonFile($"appsettings.{environment}.json", true, false)
             .AddEnvironmentVariables()
             .Build();
 
@@ -91,11 +91,11 @@ public sealed class Function
             .WriteTo.Console(new DateTimeConsoleFormatter())
             .CreateLogger();
 
-        var servicos = new ServiceCollection();
-        servicos.AddSingleton<IConfiguration>(configuracao);
-        servicos.AddLogging(builder => builder.AddSerilog(Log.Logger, false));
-        servicos.AddProcessamentoPedidos(configuracao);
+        var services = new ServiceCollection();
+        services.AddSingleton<IConfiguration>(configuration);
+        services.AddLogging(builder => builder.AddSerilog(Log.Logger));
+        services.AddProcessamentoPedidos(configuration);
 
-        return servicos.BuildServiceProvider();
+        return services.BuildServiceProvider();
     }
 }

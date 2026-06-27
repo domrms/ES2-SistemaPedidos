@@ -10,14 +10,14 @@ public sealed class PedidosController(PedidoService pedidoService) : ControllerB
 {
     [HttpPost]
     public async Task<IActionResult> CriarSolicitacaoAsync(RequisicaoCriarSolicitacao requisicao,
-        CancellationToken tokenCancelamento)
+        CancellationToken cancellationToken)
     {
-        Resultado<RespostaCriarSolicitacao> resultado;
+        Resultado<RespostaCriarSolicitacao> result;
         try
         {
-            resultado = await pedidoService.CriarSolicitacaoAsync(requisicao, tokenCancelamento);
+            result = await pedidoService.CriarSolicitacaoAsync(requisicao, cancellationToken);
         }
-        catch (Exception excecao) when (IsFalhaDependencia(excecao))
+        catch (Exception exception) when (IsDependencyFailure(exception))
         {
             return StatusCode(StatusCodes.Status503ServiceUnavailable,
                 new RespostaErro("ServicoIndisponivel",
@@ -25,17 +25,17 @@ public sealed class PedidosController(PedidoService pedidoService) : ControllerB
                     new { tentarNovamenteApos = 30 }));
         }
 
-        return resultado.Match<IActionResult>(Accepted, BadRequest);
+        return result.Match<IActionResult>(Accepted, BadRequest);
     }
 
     [HttpGet("eventos")]
-    public async Task<IActionResult> ListarEventosAsync(CancellationToken tokenCancelamento)
+    public async Task<IActionResult> ListarEventosAsync(CancellationToken cancellationToken)
     {
         try
         {
-            return Ok(await pedidoService.ListarEventosAsync(tokenCancelamento));
+            return Ok(await pedidoService.ListarEventosAsync(cancellationToken));
         }
-        catch (Exception excecao) when (IsFalhaDependencia(excecao))
+        catch (Exception exception) when (IsDependencyFailure(exception))
         {
             return StatusCode(StatusCodes.Status503ServiceUnavailable,
                 new RespostaErro("ServicoIndisponivel", "API de persistencia temporariamente indisponivel",
@@ -44,20 +44,20 @@ public sealed class PedidosController(PedidoService pedidoService) : ControllerB
     }
 
     [HttpGet("{id:long}/historico")]
-    public async Task<IActionResult> ObterHistoricoAsync(long id, CancellationToken tokenCancelamento)
+    public async Task<IActionResult> ObterHistoricoAsync(long id, CancellationToken cancellationToken)
     {
         try
         {
-            var resultado = await pedidoService.ObterHistoricoAsync(id, tokenCancelamento);
-            return resultado.Tipo switch
+            var result = await pedidoService.ObterHistoricoAsync(id, cancellationToken);
+            return result.Tipo switch
             {
-                TipoResultadoConsulta.Sucesso => Ok(resultado.Valor),
-                TipoResultadoConsulta.RequisicaoInvalida => BadRequest(resultado.Erro),
-                TipoResultadoConsulta.NaoEncontrado => NotFound(resultado.Erro),
+                TipoResultadoConsulta.Sucesso => Ok(result.Valor),
+                TipoResultadoConsulta.RequisicaoInvalida => BadRequest(result.Erro),
+                TipoResultadoConsulta.NaoEncontrado => NotFound(result.Erro),
                 _ => throw new InvalidOperationException("Tipo de resultado de consulta desconhecido.")
             };
         }
-        catch (Exception excecao) when (IsFalhaDependencia(excecao))
+        catch (Exception exception) when (IsDependencyFailure(exception))
         {
             return StatusCode(StatusCodes.Status503ServiceUnavailable,
                 new RespostaErro("ServicoIndisponivel", "API de persistencia temporariamente indisponivel",
@@ -65,10 +65,10 @@ public sealed class PedidosController(PedidoService pedidoService) : ControllerB
         }
     }
 
-    private static bool IsFalhaDependencia(Exception excecao)
+    private static bool IsDependencyFailure(Exception exception)
     {
-        return excecao is AmazonServiceException or HttpRequestException
-               || (excecao is InvalidOperationException invalidOperationException
+        return exception is AmazonServiceException or HttpRequestException
+               || (exception is InvalidOperationException invalidOperationException
                    && invalidOperationException.Message.Contains("SQS", StringComparison.OrdinalIgnoreCase));
     }
 }
