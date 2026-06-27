@@ -32,10 +32,6 @@ O fluxo principal e:
 
 ```text
 .
-|-- .github/
-|   |-- agents/                 # Agentes auxiliares do Spec Kit/Copilot
-|   |-- prompts/                # Prompts auxiliares do Spec Kit/Copilot
-|   `-- copilot-instructions.md # Instrucoes para assistentes de codigo
 |-- .run/                       # Configuracoes locais de execucao da IDE
 |-- .vscode/                    # Configuracoes do VS Code
 |-- database/

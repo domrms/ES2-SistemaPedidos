@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using Amazon;
 using Amazon.SQS;
@@ -89,4 +90,5 @@ aplicacao.MapHealthChecks("/api/healthcheck", new HealthCheckOptions
 
 aplicacao.Run();
 
+[ExcludeFromCodeCoverage]
 public partial class Program;

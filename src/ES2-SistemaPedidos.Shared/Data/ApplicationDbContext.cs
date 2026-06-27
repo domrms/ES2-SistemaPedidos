@@ -1,10 +1,8 @@
-using System.Diagnostics.CodeAnalysis;
 using ES2_SistemaPedidos.Shared.Domain;
 using Microsoft.EntityFrameworkCore;
 
 namespace ES2_SistemaPedidos.Shared.Data;
 
-[ExcludeFromCodeCoverage]
 public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> opcoes) : DbContext(opcoes)
 {
     public DbSet<Cliente> Clientes => Set<Cliente>();

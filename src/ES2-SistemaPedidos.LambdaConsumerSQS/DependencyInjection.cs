@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using ES2_SistemaPedidos.LambdaConsumerSQS.Application.Abstractions;
 using ES2_SistemaPedidos.LambdaConsumerSQS.Application.Services;
 using ES2_SistemaPedidos.LambdaConsumerSQS.Infrastructure.Data;
@@ -6,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace ES2_SistemaPedidos.LambdaConsumerSQS;
 
+[ExcludeFromCodeCoverage]
 public static class DependencyInjection
 {
     public static IServiceCollection AddProcessamentoPedidos(this IServiceCollection servicos,

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Dapper;
 using ES2_SistemaPedidos.LambdaConsumerSQS.Application.Abstractions;
 using ES2_SistemaPedidos.LambdaConsumerSQS.Application.Models;
@@ -6,6 +7,7 @@ using Npgsql;
 
 namespace ES2_SistemaPedidos.LambdaConsumerSQS.Infrastructure.Data;
 
+[ExcludeFromCodeCoverage]
 public sealed class PedidoProcessamentoRepositoryDapper(IConfiguration configuracao) : IPedidoProcessamentoRepository
 {
     private const string InserirEventoSql = """
