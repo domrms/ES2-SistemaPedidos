@@ -50,6 +50,18 @@ public sealed class EventoCliente
 
     public Produto? Produto { get; private set; }
 
+    //TESTE SAST: Método inseguro adicionado para teste de análise estática de código
+    // Método adicionado para teste do SAST
+    //public string GenerateInsecureHashForTesting(string input)
+    //{
+    //    // SAST Test: This should be flagged for using an insecure algorithm
+    //    using (var md5 = System.Security.Cryptography.MD5.Create())
+    //    {
+    //        var hash = md5.ComputeHash(System.Text.Encoding.UTF8.GetBytes(input));
+    //        return Convert.ToBase64String(hash);
+    //    }
+    //}
+
     public IReadOnlyCollection<PedidoStatus> HistoricoStatus { get; private set; } = new List<PedidoStatus>();
 }
 
