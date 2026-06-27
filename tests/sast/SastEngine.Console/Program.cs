@@ -41,8 +41,10 @@ class Program
         Console.WriteLine($"Solução identificada: {Path.GetFileName(solutionFilePath)}");
 
         // 4. Instancia as regras do SAST
-        var analyzer = new InsecureCryptographyAnalyzer(); // Seu analisador Roslyn
-        var analyzers = ImmutableArray.Create<DiagnosticAnalyzer>(analyzer);
+        var analyzers = ImmutableArray.Create<DiagnosticAnalyzer>(
+            new InsecureCryptographyAnalyzer(),
+            new HardcodedSecretAnalyzer()
+        );
 
         // 5. Carrega e analisa a solução
         using (var workspace = MSBuildWorkspace.Create())
@@ -76,7 +78,7 @@ class Program
                 var compilationWithAnalyzers = compilation.WithAnalyzers(analyzers);
                 var diagnostics = await compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync();
 
-                var securityFlaws = diagnostics.Where(d => d.Id == InsecureCryptographyAnalyzer.DiagnosticId).ToList();
+                var securityFlaws = diagnostics.ToList();
 
                 if (!securityFlaws.Any())
                 {
