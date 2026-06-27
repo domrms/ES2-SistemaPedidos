@@ -23,6 +23,9 @@ public sealed class PedidoProcessamentoHttpClient(HttpClient clienteHttp) : IPed
         resposta.EnsureSuccessStatusCode();
     }
 
-    private static RequisicaoProcessamentoPedido CriarRequisicao(EventoProcessamento evento) =>
-        new(evento.ClienteId, evento.ProdutoId, evento.EventoId, evento.DataHoraEvento, evento.SalvoEm);
+    private static RequisicaoProcessamentoPedido CriarRequisicao(EventoProcessamento evento)
+    {
+        return new RequisicaoProcessamentoPedido(evento.ClienteId, evento.ProdutoId, evento.EventoId,
+            evento.DataHoraEvento, evento.SalvoEm);
+    }
 }

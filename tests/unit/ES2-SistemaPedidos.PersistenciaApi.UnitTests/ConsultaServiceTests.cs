@@ -1,4 +1,3 @@
-using ES2_SistemaPedidos.PersistenciaApi;
 using ES2_SistemaPedidos.PersistenciaApi.Application;
 using ES2_SistemaPedidos.PersistenciaApi.Data;
 using Microsoft.Extensions.Caching.Memory;
@@ -81,13 +80,18 @@ public sealed class ConsultaServiceTests
 
     private sealed class FakeEventoRepositorio : IEventoRepositorio
     {
-        public Task<IReadOnlyCollection<EventoDetalhado>> ListarTodosAsync(CancellationToken tokenCancelamento) =>
-            Task.FromResult<IReadOnlyCollection<EventoDetalhado>>([]);
+        public Task<IReadOnlyCollection<EventoDetalhado>> ListarTodosAsync(CancellationToken tokenCancelamento)
+        {
+            return Task.FromResult<IReadOnlyCollection<EventoDetalhado>>([]);
+        }
     }
 
     private sealed class FakeStatusRepositorio : IPedidoStatusRepositorio
     {
         public Task<HistoricoPedidoDetalhado?> ObterHistoricoAsync(long pedidoId,
-            CancellationToken tokenCancelamento) => Task.FromResult<HistoricoPedidoDetalhado?>(null);
+            CancellationToken tokenCancelamento)
+        {
+            return Task.FromResult<HistoricoPedidoDetalhado?>(null);
+        }
     }
 }

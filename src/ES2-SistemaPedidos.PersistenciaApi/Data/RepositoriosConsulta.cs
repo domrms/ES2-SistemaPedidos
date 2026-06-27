@@ -25,14 +25,18 @@ public interface IPedidoStatusRepositorio
 
 public sealed class ClienteRepositorio(ApplicationDbContext contextoBanco) : IClienteRepositorio
 {
-    public Task<bool> ExisteAsync(int clienteId, CancellationToken tokenCancelamento) =>
-        contextoBanco.Clientes.AsNoTracking().AnyAsync(cliente => cliente.Id == clienteId, tokenCancelamento);
+    public Task<bool> ExisteAsync(int clienteId, CancellationToken tokenCancelamento)
+    {
+        return contextoBanco.Clientes.AsNoTracking().AnyAsync(cliente => cliente.Id == clienteId, tokenCancelamento);
+    }
 }
 
 public sealed class ProdutoRepositorio(ApplicationDbContext contextoBanco) : IProdutoRepositorio
 {
-    public Task<bool> ExisteAsync(int produtoId, CancellationToken tokenCancelamento) =>
-        contextoBanco.Produtos.AsNoTracking().AnyAsync(produto => produto.Id == produtoId, tokenCancelamento);
+    public Task<bool> ExisteAsync(int produtoId, CancellationToken tokenCancelamento)
+    {
+        return contextoBanco.Produtos.AsNoTracking().AnyAsync(produto => produto.Id == produtoId, tokenCancelamento);
+    }
 }
 
 public sealed class EventoRepositorio(ApplicationDbContext contextoBanco) : IEventoRepositorio

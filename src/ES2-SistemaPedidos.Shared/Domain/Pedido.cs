@@ -62,7 +62,7 @@ public enum EstadoPedido
 }
 
 /// <summary>
-/// Registro imutavel de uma transicao de estado do pedido.
+///     Registro imutavel de uma transicao de estado do pedido.
 /// </summary>
 public sealed class PedidoStatus
 {

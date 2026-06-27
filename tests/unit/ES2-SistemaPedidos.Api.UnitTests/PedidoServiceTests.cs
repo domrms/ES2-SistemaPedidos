@@ -267,7 +267,10 @@ public sealed partial class PedidoServiceTests
         }
 
         public Task<IReadOnlyCollection<RespostaEventoDetalhado>> ListarEventosAsync(
-            CancellationToken tokenCancelamento) => Task.FromResult(eventos);
+            CancellationToken tokenCancelamento)
+        {
+            return Task.FromResult(eventos);
+        }
 
         public Task<RespostaHistoricoPedido?> ObterHistoricoAsync(long pedidoId,
             CancellationToken tokenCancelamento)

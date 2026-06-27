@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Json;
 using ES2_SistemaPedidos.Api.Application.Abstractions;
 
 namespace ES2_SistemaPedidos.Api.Infrastructure.Persistencia;

@@ -4,8 +4,8 @@ using Amazon;
 using Amazon.SQS;
 using ES2_SistemaPedidos.Api.Application.Abstractions;
 using ES2_SistemaPedidos.Api.Application.Pedidos;
-using ES2_SistemaPedidos.Api.Infrastructure.Messaging;
 using ES2_SistemaPedidos.Api.Infrastructure.Health;
+using ES2_SistemaPedidos.Api.Infrastructure.Messaging;
 using ES2_SistemaPedidos.Api.Infrastructure.Persistencia;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Serilog;
@@ -49,10 +49,8 @@ construtorAplicacao.Services.AddHttpClient<IPersistenciaPedidosClient, Persisten
     cliente.BaseAddress = new Uri(urlBase);
     cliente.Timeout = TimeSpan.FromSeconds(10);
 });
-construtorAplicacao.Services.AddHttpClient("FlociHealthCheck", cliente =>
-{
-    cliente.Timeout = TimeSpan.FromSeconds(5);
-});
+construtorAplicacao.Services.AddHttpClient("FlociHealthCheck",
+    cliente => { cliente.Timeout = TimeSpan.FromSeconds(5); });
 construtorAplicacao.Services.AddHttpClient(nameof(PersistenciaApiHealthCheck), cliente =>
 {
     cliente.BaseAddress = new Uri(construtorAplicacao.Configuration["PersistenciaApi:UrlBase"]

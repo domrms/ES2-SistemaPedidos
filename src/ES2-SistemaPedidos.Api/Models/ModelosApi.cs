@@ -1,3 +1,5 @@
+using ES2_SistemaPedidos.Shared.Domain;
+
 namespace ES2_SistemaPedidos.Api;
 
 public sealed record RequisicaoCriarSolicitacao(int ClienteId, int ProdutoId);
@@ -26,7 +28,7 @@ public sealed record RespostaHistoricoPedido(
 
 public sealed record RespostaTransicaoPedido(
     long Id,
-    Shared.Domain.EstadoPedido Status,
+    EstadoPedido Status,
     DateTimeOffset RegistradoEm,
     string? Detalhe);
 
@@ -39,13 +41,20 @@ public enum TipoResultadoConsulta
 
 public sealed record ResultadoConsulta<T>(TipoResultadoConsulta Tipo, T? Valor, RespostaErro? Erro)
 {
-    public static ResultadoConsulta<T> Sucesso(T valor) => new(TipoResultadoConsulta.Sucesso, valor, null);
+    public static ResultadoConsulta<T> Sucesso(T valor)
+    {
+        return new ResultadoConsulta<T>(TipoResultadoConsulta.Sucesso, valor, null);
+    }
 
-    public static ResultadoConsulta<T> RequisicaoInvalida(RespostaErro erro) =>
-        new(TipoResultadoConsulta.RequisicaoInvalida, default, erro);
+    public static ResultadoConsulta<T> RequisicaoInvalida(RespostaErro erro)
+    {
+        return new ResultadoConsulta<T>(TipoResultadoConsulta.RequisicaoInvalida, default, erro);
+    }
 
-    public static ResultadoConsulta<T> NaoEncontrado(RespostaErro erro) =>
-        new(TipoResultadoConsulta.NaoEncontrado, default, erro);
+    public static ResultadoConsulta<T> NaoEncontrado(RespostaErro erro)
+    {
+        return new ResultadoConsulta<T>(TipoResultadoConsulta.NaoEncontrado, default, erro);
+    }
 }
 
 public sealed record RespostaErro(

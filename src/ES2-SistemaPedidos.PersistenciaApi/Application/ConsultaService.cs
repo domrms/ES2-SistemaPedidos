@@ -11,19 +11,28 @@ public sealed class ConsultaService(
     IMemoryCache cache,
     IConfiguration configuracao)
 {
-    public Task<bool> ExisteClienteAsync(int clienteId, CancellationToken tokenCancelamento) =>
-        ObterOuCriarAsync($"cliente:{clienteId}",
+    public Task<bool> ExisteClienteAsync(int clienteId, CancellationToken tokenCancelamento)
+    {
+        return ObterOuCriarAsync($"cliente:{clienteId}",
             token => clientes.ExisteAsync(clienteId, token), tokenCancelamento);
+    }
 
-    public Task<bool> ExisteProdutoAsync(int produtoId, CancellationToken tokenCancelamento) =>
-        ObterOuCriarAsync($"produto:{produtoId}",
+    public Task<bool> ExisteProdutoAsync(int produtoId, CancellationToken tokenCancelamento)
+    {
+        return ObterOuCriarAsync($"produto:{produtoId}",
             token => produtos.ExisteAsync(produtoId, token), tokenCancelamento);
+    }
 
-    public Task<IReadOnlyCollection<EventoDetalhado>> ListarEventosAsync(CancellationToken tokenCancelamento) =>
-        eventos.ListarTodosAsync(tokenCancelamento);
+    public Task<IReadOnlyCollection<EventoDetalhado>> ListarEventosAsync(CancellationToken tokenCancelamento)
+    {
+        return eventos.ListarTodosAsync(tokenCancelamento);
+    }
 
     public Task<HistoricoPedidoDetalhado?> ObterHistoricoAsync(long pedidoId,
-        CancellationToken tokenCancelamento) => status.ObterHistoricoAsync(pedidoId, tokenCancelamento);
+        CancellationToken tokenCancelamento)
+    {
+        return status.ObterHistoricoAsync(pedidoId, tokenCancelamento);
+    }
 
     private async Task<bool> ObterOuCriarAsync(string chave,
         Func<CancellationToken, Task<bool>> fabrica,

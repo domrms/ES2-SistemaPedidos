@@ -93,7 +93,7 @@ public sealed class Function
 
         var servicos = new ServiceCollection();
         servicos.AddSingleton<IConfiguration>(configuracao);
-        servicos.AddLogging(builder => builder.AddSerilog(Log.Logger, false));
+        servicos.AddLogging(builder => builder.AddSerilog(Log.Logger));
         servicos.AddProcessamentoPedidos(configuracao);
 
         return servicos.BuildServiceProvider();

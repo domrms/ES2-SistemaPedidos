@@ -17,20 +17,25 @@ public interface IPedidoProcessamentoRepositorio
 public sealed class PedidoProcessamentoRepositorio(ApplicationDbContext contextoBanco)
     : IPedidoProcessamentoRepositorio
 {
-    public Task RegistrarEventoAsync(RequisicaoProcessamentoPedido pedido, CancellationToken tokenCancelamento) =>
-        RegistrarComStatusAsync(pedido,
+    public Task RegistrarEventoAsync(RequisicaoProcessamentoPedido pedido, CancellationToken tokenCancelamento)
+    {
+        return RegistrarComStatusAsync(pedido,
         [
             (EstadoPedido.Recebido, pedido.DataHoraEvento, null),
             (EstadoPedido.Processando, pedido.SalvoEm, null),
             (EstadoPedido.Concluido, pedido.SalvoEm, null)
         ], tokenCancelamento);
+    }
 
     public Task RegistrarErroAsync(RequisicaoProcessamentoPedido pedido, string detalhe,
-        CancellationToken tokenCancelamento) => RegistrarComStatusAsync(pedido,
+        CancellationToken tokenCancelamento)
+    {
+        return RegistrarComStatusAsync(pedido,
         [
             (EstadoPedido.Recebido, pedido.DataHoraEvento, null),
             (EstadoPedido.Erro, pedido.SalvoEm, detalhe)
         ], tokenCancelamento);
+    }
 
     private async Task RegistrarComStatusAsync(RequisicaoProcessamentoPedido requisicao,
         IReadOnlyCollection<(EstadoPedido Status, DateTimeOffset RegistradoEm, string? Detalhe)> transicoes,
@@ -41,7 +46,9 @@ public sealed class PedidoProcessamentoRepositorio(ApplicationDbContext contexto
             await PersistirAsync(requisicao, transicoes, tokenCancelamento);
         }
         catch (DbUpdateException excecao) when (excecao.InnerException is PostgresException
-                                                { SqlState: PostgresErrorCodes.UniqueViolation })
+                                                {
+                                                    SqlState: PostgresErrorCodes.UniqueViolation
+                                                })
         {
             // Uma entrega concorrente pode inserir o mesmo evento entre a consulta e o SaveChanges.
             // Limpa o estado local e repete para complementar somente os status ainda ausentes.

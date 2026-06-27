@@ -9,18 +9,24 @@ public sealed class ConsultasController(ConsultaService servico) : ControllerBas
 {
     [HttpGet("clientes/{id:int}/existe")]
     public async Task<ActionResult<RespostaExistencia>> ExisteClienteAsync(int id,
-        CancellationToken tokenCancelamento) =>
-        Ok(new RespostaExistencia(await servico.ExisteClienteAsync(id, tokenCancelamento)));
+        CancellationToken tokenCancelamento)
+    {
+        return Ok(new RespostaExistencia(await servico.ExisteClienteAsync(id, tokenCancelamento)));
+    }
 
     [HttpGet("produtos/{id:int}/existe")]
     public async Task<ActionResult<RespostaExistencia>> ExisteProdutoAsync(int id,
-        CancellationToken tokenCancelamento) =>
-        Ok(new RespostaExistencia(await servico.ExisteProdutoAsync(id, tokenCancelamento)));
+        CancellationToken tokenCancelamento)
+    {
+        return Ok(new RespostaExistencia(await servico.ExisteProdutoAsync(id, tokenCancelamento)));
+    }
 
     [HttpGet("eventos")]
     public async Task<ActionResult<RespostaListarEventos>> ListarEventosAsync(
-        CancellationToken tokenCancelamento) =>
-        Ok(new RespostaListarEventos(await servico.ListarEventosAsync(tokenCancelamento)));
+        CancellationToken tokenCancelamento)
+    {
+        return Ok(new RespostaListarEventos(await servico.ListarEventosAsync(tokenCancelamento)));
+    }
 
     [HttpGet("pedidos/{id:long}/historico")]
     public async Task<ActionResult<HistoricoPedidoDetalhado>> ObterHistoricoAsync(long id,
