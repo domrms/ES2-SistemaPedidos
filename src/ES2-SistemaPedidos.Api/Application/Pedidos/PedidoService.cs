@@ -11,9 +11,9 @@ public sealed class PedidoService(
     IProdutoRepositorio produtoRepositorio,
     IEventoRepositorio eventoRepositorio,
     IPublicadorEventoSolicitacao publicadorEvento,
-    TimeProvider provedorTempo)
+    TimeProvider provedorTempo,
+    IPedidoStatusRepositorio? pedidoStatusRepositorio = null)
 {
-    // ...existing code...
     public async Task<Resultado<RespostaCriarSolicitacao>> CriarSolicitacaoAsync(
         RequisicaoCriarSolicitacao requisicao,
         CancellationToken tokenCancelamento)
@@ -71,6 +71,38 @@ public sealed class PedidoService(
             .ToList();
 
         return new RespostaListarEventos(eventosDetalhados.AsReadOnly());
+    }
+
+    public async Task<ResultadoConsulta<RespostaHistoricoPedido>> ObterHistoricoAsync(long pedidoId,
+        CancellationToken tokenCancelamento)
+    {
+        if (pedidoId <= 0)
+            return ResultadoConsulta<RespostaHistoricoPedido>.RequisicaoInvalida(new RespostaErro(
+                "PedidoIdInvalido",
+                "O id do pedido deve ser maior que zero."));
+
+        if (pedidoStatusRepositorio is null)
+            throw new InvalidOperationException("Repositorio de historico de pedidos nao configurado.");
+
+        var historico = await pedidoStatusRepositorio.ObterHistoricoAsync(pedidoId, tokenCancelamento);
+        if (historico is null)
+            return ResultadoConsulta<RespostaHistoricoPedido>.NaoEncontrado(new RespostaErro(
+                "PedidoNaoEncontrado",
+                $"Pedido {pedidoId} nao encontrado."));
+
+        var transicoes = historico.Transicoes
+            .Select(transicao => new RespostaTransicaoPedido(
+                transicao.Id,
+                transicao.Status,
+                ObterDataHoraBrasilia(transicao.RegistradoEm),
+                transicao.Detalhe))
+            .ToList()
+            .AsReadOnly();
+
+        return ResultadoConsulta<RespostaHistoricoPedido>.Sucesso(new RespostaHistoricoPedido(
+            historico.PedidoId,
+            historico.EventoId,
+            transicoes));
     }
 
     private static string GerarEventoId(DateTimeOffset dataHoraBrasilia)

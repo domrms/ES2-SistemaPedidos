@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.Serialization.SystemTextJson;
 using Amazon.Lambda.SQSEvents;
@@ -16,6 +17,7 @@ public sealed class Function
 {
     private readonly IServiceProvider _servicos;
 
+    [ExcludeFromCodeCoverage]
     public Function()
         : this(CriarServiceProvider())
     {
@@ -67,6 +69,7 @@ public sealed class Function
         };
     }
 
+    [ExcludeFromCodeCoverage]
     private static IServiceProvider CriarServiceProvider()
     {
         var ambiente = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")

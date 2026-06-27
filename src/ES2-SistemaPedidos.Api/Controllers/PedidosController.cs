@@ -49,6 +49,29 @@ public sealed class PedidosController(PedidoService pedidoService) : ControllerB
         }
     }
 
+    [HttpGet("{id:long}/historico")]
+    public async Task<IActionResult> ObterHistoricoAsync(long id, CancellationToken tokenCancelamento)
+    {
+        try
+        {
+            var resultado = await pedidoService.ObterHistoricoAsync(id, tokenCancelamento);
+            return resultado.Tipo switch
+            {
+                TipoResultadoConsulta.Sucesso => Ok(resultado.Valor),
+                TipoResultadoConsulta.RequisicaoInvalida => BadRequest(resultado.Erro),
+                TipoResultadoConsulta.NaoEncontrado => NotFound(resultado.Erro),
+                _ => throw new InvalidOperationException("Tipo de resultado de consulta desconhecido.")
+            };
+        }
+        catch (Exception excecao) when (IsFalhaDependencia(excecao))
+        {
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new RespostaErro("ServicoIndisponivel", "Banco de dados temporariamente indisponivel",
+                    new { tentarNovamenteApos = 30 }));
+        }
+    }
+
     private static bool IsFalhaDependencia(Exception excecao)
     {
         return excecao is DbUpdateException

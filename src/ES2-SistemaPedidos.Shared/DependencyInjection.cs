@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using ES2_SistemaPedidos.Shared.Data;
 using ES2_SistemaPedidos.Shared.Data.Repositorios;
 using ES2_SistemaPedidos.Shared.Domain.Repositories;
@@ -7,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace ES2_SistemaPedidos.Shared;
 
+[ExcludeFromCodeCoverage]
 public static class DependencyInjection
 {
     public static IServiceCollection AddPersistenciaPedidos(this IServiceCollection servicos,
@@ -20,6 +22,7 @@ public static class DependencyInjection
         servicos.AddScoped<IClienteRepositorio, ClienteRepositorio>();
         servicos.AddScoped<IProdutoRepositorio, ProdutoRepositorio>();
         servicos.AddScoped<IEventoRepositorio, EventoRepositorio>();
+        servicos.AddScoped<IPedidoStatusRepositorio, PedidoStatusRepositorio>();
 
         return servicos;
     }

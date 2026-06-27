@@ -32,10 +32,6 @@ O fluxo principal e:
 
 ```text
 .
-|-- .github/
-|   |-- agents/                 # Agentes auxiliares do Spec Kit/Copilot
-|   |-- prompts/                # Prompts auxiliares do Spec Kit/Copilot
-|   `-- copilot-instructions.md # Instrucoes para assistentes de codigo
 |-- .run/                       # Configuracoes locais de execucao da IDE
 |-- .vscode/                    # Configuracoes do VS Code
 |-- database/
@@ -173,6 +169,7 @@ Tabelas:
 - `clientes`: cadastro basico de clientes.
 - `produtos`: cadastro basico de produtos.
 - `eventos`: eventos processados pela Lambda.
+- `pedido_status`: historico append-only das transicoes de cada pedido.
 
 Scripts:
 
@@ -203,15 +200,25 @@ http://localhost:5000
 
 ### `GET /api/healthcheck`
 
-Verifica se a API esta disponivel.
+Verifica ativamente a conectividade com PostgreSQL e Floci. Retorna `503 Service Unavailable` se uma dependencia
+estiver indisponivel.
 
 Resposta `200 OK`:
 
 ```json
 {
   "estado": "healthy",
-  "dataHora": "2026-05-10T10:00:00",
-  "versao": "1.0.0"
+  "duracao": "00:00:00.0123456",
+  "verificacoes": {
+    "postgresql": {
+      "estado": "healthy",
+      "descricao": "Conexao com PostgreSQL disponivel."
+    },
+    "floci": {
+      "estado": "healthy",
+      "descricao": "Floci acessivel (HTTP 200)."
+    }
+  }
 }
 ```
 
@@ -286,6 +293,42 @@ Resposta `200 OK`:
   ]
 }
 ```
+
+### `GET /api/solicitacoes/{id}/historico`
+
+Retorna, em ordem de insercao, o historico imutavel de estados do pedido. Um processamento normal registra
+`Recebido`, `Processando` e `Concluido`; falhas podem ser registradas como `Erro`.
+
+Resposta `200 OK`:
+
+```json
+{
+  "pedidoId": 1,
+  "eventoId": "ES2-12345678-153015",
+  "historico": [
+    {
+      "id": 1,
+      "status": "Recebido",
+      "registradoEm": "2026-05-10T15:30:15-03:00",
+      "detalhe": null
+    },
+    {
+      "id": 2,
+      "status": "Processando",
+      "registradoEm": "2026-05-10T15:30:16-03:00",
+      "detalhe": null
+    },
+    {
+      "id": 3,
+      "status": "Concluido",
+      "registradoEm": "2026-05-10T15:30:16-03:00",
+      "detalhe": null
+    }
+  ]
+}
+```
+
+IDs menores ou iguais a zero retornam `400 Bad Request`; pedidos inexistentes retornam `404 Not Found`.
 
 ## Configuracao
 

@@ -11,8 +11,25 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     public DbSet<EventoCliente> Eventos => Set<EventoCliente>();
 
+    public DbSet<PedidoStatus> PedidoStatus => Set<PedidoStatus>();
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        ValidarHistoricoImutavel();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess,
+        CancellationToken cancellationToken = default)
+    {
+        ValidarHistoricoImutavel();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+
         modelBuilder.Entity<Cliente>(construtor =>
         {
             construtor.ToTable("clientes");
@@ -52,5 +69,14 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
                 .HasForeignKey(evento => evento.ProdutoId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+    }
+
+    private void ValidarHistoricoImutavel()
+    {
+        var possuiAlteracao = ChangeTracker.Entries<PedidoStatus>()
+            .Any(entrada => entrada.State is EntityState.Modified or EntityState.Deleted);
+
+        if (possuiAlteracao)
+            throw new InvalidOperationException("O historico de status do pedido e imutavel.");
     }
 }

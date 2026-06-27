@@ -124,6 +124,28 @@ body {
     font-size: 1.5em;
 }
 
+.section-description {
+    color: var(--text-light);
+    margin: -10px 0 20px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.inline-form {
+    display: flex;
+    align-items: flex-end;
+    gap: 15px;
+}
+
+.inline-form .form-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+
 /* Form */
 .form-group {
     margin-bottom: 20px;
@@ -194,6 +216,21 @@ body {
     background: var(--success-dark);
 }
 
+.btn-secondary {
+    background: #475569;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #334155;
+}
+
+.btn-small {
+    padding: 8px 14px;
+    margin-top: 10px;
+    font-size: 0.9em;
+}
+
 .btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
@@ -242,6 +279,25 @@ body {
     font-size: 0.9em;
     white-space: pre-wrap;
 }
+
+.health-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.health-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.55);
+}
+
+.health-detail.healthy strong { color: var(--success-dark); }
+.health-detail.unhealthy strong { color: var(--error-dark); }
 
 /* Eventos Container */
 .eventos-container {
@@ -294,6 +350,57 @@ body {
     font-weight: 600;
     color: #92400e;
     word-break: break-all;
+}
+
+.historico-container {
+    margin-top: 20px;
+}
+
+.historico-evento-id {
+    color: var(--text-light);
+    font-family: 'Courier New', monospace;
+    overflow-wrap: anywhere;
+}
+
+.timeline {
+    list-style: none;
+    margin-top: 18px;
+    padding-left: 12px;
+}
+
+.timeline-item {
+    position: relative;
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 8px 16px;
+    padding: 0 0 24px 30px;
+    border-left: 3px solid var(--border-color);
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -9px;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    border: 3px solid white;
+}
+
+.timeline-item.status-processando::before { background: var(--warning-color); }
+.timeline-item.status-concluido::before { background: var(--success-color); }
+.timeline-item.status-erro::before { background: var(--error-color); }
+.timeline-item:last-child { border-left-color: transparent; padding-bottom: 0; }
+.timeline-status { color: var(--text-dark); }
+.timeline-date { color: var(--text-light); }
+.timeline-detail { grid-column: 1 / -1; color: var(--text-light); }
+
+.empty-state {
+    grid-column: 1 / -1;
+    padding: 20px;
+    text-align: center;
+    color: var(--text-light);
 }
 
 /* Loading */
@@ -353,6 +460,20 @@ body {
     }
 
     .eventos-container {
+        grid-template-columns: 1fr;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .inline-form {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .timeline-item {
         grid-template-columns: 1fr;
     }
 
