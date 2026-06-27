@@ -8,11 +8,10 @@
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
         <header class="header">
             <div class="header-content">
                 <h1>📦 Sistema de Pedidos ES2</h1>
-                <p class="subtitle">Gerenciamento de solicitações e eventos</p>
+                <p class="subtitle">Acompanhamento de solicitações e histórico de processamento</p>
             </div>
             <div class="health-status" id="healthStatus">
                 <span class="status-indicator loading"></span>
@@ -20,64 +19,60 @@
             </div>
         </header>
 
-        <!-- Main Content -->
         <main class="main-content">
-            <!-- Section: Health Check -->
             <section class="card">
-                <h2>🏥 Health Check</h2>
-                <button class="btn btn-primary" onclick="checkHealth()">
-                    Verificar Status
-                </button>
-                <div id="healthResponse" class="response-area"></div>
+                <h2>🏥 Saúde dos serviços</h2>
+                <p class="section-description">Verifica a conectividade da API com PostgreSQL e Floci.</p>
+                <button class="btn btn-primary" type="button" onclick="checkHealth()">Verificar dependências</button>
+                <div id="healthResponse" class="response-area" aria-live="polite"></div>
             </section>
 
-            <!-- Section: Nova Solicitação -->
             <section class="card">
-                <h2>➕ Nova Solicitação</h2>
+                <h2>➕ Nova solicitação</h2>
                 <form id="solicitacaoForm" onsubmit="criarSolicitacao(event)">
-                    <div class="form-group">
-                        <label for="clienteId">ID do Cliente:</label>
-                        <input 
-                            type="number" 
-                            id="clienteId" 
-                            name="clienteId" 
-                            min="0"
-                            placeholder="Ex: 1"
-                            required
-                        >
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="clienteId">ID do cliente:</label>
+                            <input type="number" id="clienteId" name="clienteId" min="1" step="1"
+                                   placeholder="Ex.: 1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="produtoId">ID do produto:</label>
+                            <input type="number" id="produtoId" name="produtoId" min="1" step="1"
+                                   placeholder="Ex.: 1" required>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="produtoId">ID do Produto:</label>
-                        <input 
-                            type="number" 
-                            id="produtoId" 
-                            name="produtoId" 
-                            min="0"
-                            placeholder="Ex: 1"
-                            required
-                        >
-                    </div>
-                    <button type="submit" class="btn btn-success">
-                        Enviar Solicitação
-                    </button>
+                    <button type="submit" class="btn btn-success">Enviar solicitação</button>
                 </form>
-                <div id="solicitacaoResponse" class="response-area"></div>
+                <div id="solicitacaoResponse" class="response-area" aria-live="polite"></div>
             </section>
 
-            <!-- Section: Eventos -->
             <section class="card">
-                <h2>📋 Eventos Registrados</h2>
-                <button class="btn btn-primary" onclick="carregarEventos()">
-                    Carregar Eventos
-                </button>
-                <div id="eventosResponse" class="response-area"></div>
+                <h2>🧭 Histórico do pedido</h2>
+                <p class="section-description">Consulte a linha do tempo imutável usando o ID numérico do pedido.</p>
+                <form id="historicoForm" class="inline-form" onsubmit="consultarHistorico(event)">
+                    <div class="form-group">
+                        <label for="pedidoId">ID do pedido:</label>
+                        <input type="number" id="pedidoId" name="pedidoId" min="1" step="1"
+                               placeholder="Ex.: 42" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Consultar histórico</button>
+                </form>
+                <div id="historicoResponse" class="response-area" aria-live="polite"></div>
+                <div id="historicoList" class="historico-container"></div>
+            </section>
+
+            <section class="card">
+                <h2>📋 Pedidos processados</h2>
+                <p class="section-description">Cada card oferece acesso direto ao respectivo histórico.</p>
+                <button class="btn btn-primary" type="button" onclick="carregarEventos()">Carregar pedidos</button>
+                <div id="eventosResponse" class="response-area" aria-live="polite"></div>
                 <div id="eventosList" class="eventos-container"></div>
             </section>
         </main>
 
-        <!-- Footer -->
         <footer class="footer">
-            <p>API: http://localhost:5000 | Frontend ES2</p>
+            <p>API: http://localhost:8080 | Frontend ES2</p>
         </footer>
     </div>
 
