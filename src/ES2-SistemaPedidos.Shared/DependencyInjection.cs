@@ -12,9 +12,13 @@ public static class DependencyInjection
     public static IServiceCollection AddBancoPedidos(this IServiceCollection services,
         IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("BancoPedidos")
-                               ?? configuration["DATABASE_URL"]
-                            ?? "Host=localhost;Port=5432;Database=es2_pedidos;Username=dev;Password=dev";
+        var connectionString = configuration.GetConnectionString("BancoPedidos");
+        if (string.IsNullOrWhiteSpace(connectionString))
+            connectionString = configuration["DATABASE_URL"];
+
+        if (string.IsNullOrWhiteSpace(connectionString))
+            throw new InvalidOperationException(
+                "String de conexao nao configurada. Defina ConnectionStrings:BancoPedidos ou DATABASE_URL.");
 
         services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
         return services;

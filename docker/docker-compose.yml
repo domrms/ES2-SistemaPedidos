@@ -113,6 +113,7 @@ services:
       AWS__ServiceUrl: http://floci:4566
       SQS_FILA_URL: http://floci:4566/000000000000/processamento-solicitacoes
       PersistenciaApi__UrlBase: http://persistencia-api:8080
+      Cors__AllowedOrigins__0: http://localhost:8000
     networks:
       - es2-sistema-pedidos
 

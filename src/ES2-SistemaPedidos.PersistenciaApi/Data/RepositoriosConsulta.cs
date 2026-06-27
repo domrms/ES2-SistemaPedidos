@@ -45,7 +45,6 @@ public sealed class EventoRepositorio(ApplicationDbContext dbContext) : IEventoR
     {
         var eventos = await dbContext.Eventos
             .AsNoTracking()
-            .OrderBy(evento => evento.SalvoEm)
             .Select(evento => new EventoDetalhado(
                 evento.Id,
                 evento.Cliente!.Nome,
@@ -55,7 +54,7 @@ public sealed class EventoRepositorio(ApplicationDbContext dbContext) : IEventoR
                 evento.SalvoEm))
             .ToListAsync(cancellationToken);
 
-        return eventos.AsReadOnly();
+        return eventos.OrderBy(evento => evento.SalvoEm).ToList().AsReadOnly();
     }
 }
 

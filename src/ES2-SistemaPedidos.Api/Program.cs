@@ -20,14 +20,31 @@ builder.Host.UseSerilog((context, _, loggerConfiguration) =>
     loggerConfiguration.ReadFrom.Configuration(context.Configuration);
 });
 
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>()
+    ?.Where(origin => !string.IsNullOrWhiteSpace(origin))
+    .ToArray() ?? [];
+
+if (allowedOrigins.Length == 0)
+    throw new InvalidOperationException(
+        "Nenhuma origem CORS foi configurada. Defina Cors:AllowedOrigins com origens confiaveis.");
+
+if (allowedOrigins.Any(origin =>
+        !Uri.TryCreate(origin, UriKind.Absolute, out var uri)
+        || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
+        || origin.Contains('*', StringComparison.Ordinal)))
+    throw new InvalidOperationException(
+        "Cors:AllowedOrigins contem uma origem invalida. Use apenas origens HTTP ou HTTPS explicitas.");
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowOrigins", policyBuilder =>
     {
         policyBuilder
-            .AllowAnyOrigin()
-            .AllowAnyMethod()
-            .AllowAnyHeader();
+            .WithOrigins(allowedOrigins)
+            .WithMethods(HttpMethods.Get, HttpMethods.Post)
+            .WithHeaders("Accept", "Content-Type");
     });
 });
 
