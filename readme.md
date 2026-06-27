@@ -88,7 +88,7 @@ Funcionalidades:
 - Consulta de eventos gravados.
 - Tratamento de falhas da API de persistencia/mensageria com HTTP `503`.
 - Swagger habilitado.
-- CORS liberado para qualquer origem.
+- CORS restrito às origens explícitas configuradas em `Cors:AllowedOrigins`.
 
 ### `src/ES2-SistemaPedidos.PersistenciaApi`
 
@@ -355,7 +355,15 @@ A API de persistencia usa a primeira configuracao disponivel nesta ordem:
 
 1. `ConnectionStrings:BancoPedidos`
 2. `DATABASE_URL`
-3. Valor padrao: `Host=localhost;Port=5432;Database=es2_pedidos;Username=dev;Password=dev`
+
+Não existe valor padrão: a inicialização falha quando nenhuma das duas configurações é fornecida, evitando credenciais
+embutidas no código-fonte.
+
+### CORS
+
+A API principal aceita somente origens HTTP/HTTPS explícitas em `Cors:AllowedOrigins`. Em desenvolvimento, o valor é
+`http://localhost:8000`; em outros ambientes, configure a lista por variável, por exemplo
+`Cors__AllowedOrigins__0=https://pedidos.exemplo.com`. Wildcards não são aceitos.
 
 ### API de persistencia e cache
 

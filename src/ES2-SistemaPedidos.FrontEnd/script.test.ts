@@ -115,6 +115,25 @@ describe('frontend script', () => {
     expect(document.querySelectorAll('.health-detail.unhealthy')).toHaveLength(1);
   });
 
+  it('aceita healthcheck sem verificacoes e usa a descricao padrao', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(response({ estado: 'degraded' }))
+      .mockResolvedValueOnce(response({
+        estado: 'unhealthy',
+        verificacoes: { servicoExterno: { estado: 'unhealthy' } }
+      }));
+    vi.stubGlobal('fetch', fetchMock);
+    await loadScript();
+
+    await window.checkHealth();
+    expect(document.querySelectorAll('.health-detail')).toHaveLength(0);
+    expect(document.getElementById('healthResponse')?.textContent).toContain('Degradado');
+
+    await window.checkHealth();
+    expect(document.getElementById('healthResponse')?.textContent).toContain('Indisponível');
+    expect(document.getElementById('healthResponse')?.textContent).toContain('servicoExterno');
+  });
+
   it('mostra falha de conexão ao consultar saúde', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('API indisponível')));
     await loadScript();

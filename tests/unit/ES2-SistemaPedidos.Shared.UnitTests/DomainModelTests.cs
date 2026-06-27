@@ -76,4 +76,19 @@ public sealed class DomainModelTests
         var excecao = Assert.Throws<InvalidOperationException>(() => contexto.SaveChanges());
         Assert.Equal("O historico de status do pedido e imutavel.", excecao.Message);
     }
+
+    [Fact]
+    public async Task ApplicationDbContext_deve_rejeitar_exclusao_assincrona_do_historico()
+    {
+        var opcoes = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseNpgsql("Host=localhost;Database=modelo;Username=dev;Password=dev")
+            .Options;
+        await using var contexto = new ApplicationDbContext(opcoes);
+        contexto.Attach(new PedidoStatus(2, 1, EstadoPedido.Recebido, DateTimeOffset.UtcNow));
+        contexto.Entry(contexto.PedidoStatus.Local.Single()).State = EntityState.Deleted;
+
+        var excecao = await Assert.ThrowsAsync<InvalidOperationException>(() => contexto.SaveChangesAsync());
+
+        Assert.Equal("O historico de status do pedido e imutavel.", excecao.Message);
+    }
 }
