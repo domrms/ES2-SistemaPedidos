@@ -8,64 +8,64 @@ namespace ES2_SistemaPedidos.PersistenciaApi.Data;
 
 public interface IPedidoProcessamentoRepositorio
 {
-    Task RegistrarEventoAsync(RequisicaoProcessamentoPedido pedido, CancellationToken tokenCancelamento);
+    Task RegistrarEventoAsync(RequisicaoProcessamentoPedido pedido, CancellationToken cancellationToken);
 
     Task RegistrarErroAsync(RequisicaoProcessamentoPedido pedido, string detalhe,
-        CancellationToken tokenCancelamento);
+        CancellationToken cancellationToken);
 }
 
-public sealed class PedidoProcessamentoRepositorio(ApplicationDbContext contextoBanco)
+public sealed class PedidoProcessamentoRepositorio(ApplicationDbContext dbContext)
     : IPedidoProcessamentoRepositorio
 {
-    public Task RegistrarEventoAsync(RequisicaoProcessamentoPedido pedido, CancellationToken tokenCancelamento)
+    public Task RegistrarEventoAsync(RequisicaoProcessamentoPedido pedido, CancellationToken cancellationToken)
     {
         return RegistrarComStatusAsync(pedido,
         [
             (EstadoPedido.Recebido, pedido.DataHoraEvento, null),
             (EstadoPedido.Processando, pedido.SalvoEm, null),
             (EstadoPedido.Concluido, pedido.SalvoEm, null)
-        ], tokenCancelamento);
+        ], cancellationToken);
     }
 
     public Task RegistrarErroAsync(RequisicaoProcessamentoPedido pedido, string detalhe,
-        CancellationToken tokenCancelamento)
+        CancellationToken cancellationToken)
     {
         return RegistrarComStatusAsync(pedido,
         [
             (EstadoPedido.Recebido, pedido.DataHoraEvento, null),
             (EstadoPedido.Erro, pedido.SalvoEm, detalhe)
-        ], tokenCancelamento);
+        ], cancellationToken);
     }
 
     private async Task RegistrarComStatusAsync(RequisicaoProcessamentoPedido requisicao,
         IReadOnlyCollection<(EstadoPedido Status, DateTimeOffset RegistradoEm, string? Detalhe)> transicoes,
-        CancellationToken tokenCancelamento)
+        CancellationToken cancellationToken)
     {
         try
         {
-            await PersistirAsync(requisicao, transicoes, tokenCancelamento);
+            await PersistirAsync(requisicao, transicoes, cancellationToken);
         }
-        catch (DbUpdateException excecao) when (excecao.InnerException is PostgresException
+        catch (DbUpdateException exception) when (exception.InnerException is PostgresException
                                                 {
                                                     SqlState: PostgresErrorCodes.UniqueViolation
                                                 })
         {
             // Uma entrega concorrente pode inserir o mesmo evento entre a consulta e o SaveChanges.
             // Limpa o estado local e repete para complementar somente os status ainda ausentes.
-            contextoBanco.ChangeTracker.Clear();
-            await PersistirAsync(requisicao, transicoes, tokenCancelamento);
+            dbContext.ChangeTracker.Clear();
+            await PersistirAsync(requisicao, transicoes, cancellationToken);
         }
     }
 
     private async Task PersistirAsync(RequisicaoProcessamentoPedido requisicao,
         IReadOnlyCollection<(EstadoPedido Status, DateTimeOffset RegistradoEm, string? Detalhe)> transicoes,
-        CancellationToken tokenCancelamento)
+        CancellationToken cancellationToken)
     {
-        await using var transacao = await contextoBanco.Database.BeginTransactionAsync(tokenCancelamento);
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
 
-        var pedido = await contextoBanco.Eventos
+        var pedido = await dbContext.Eventos
             .Include(evento => evento.HistoricoStatus)
-            .SingleOrDefaultAsync(evento => evento.EventoId == requisicao.EventoId, tokenCancelamento);
+            .SingleOrDefaultAsync(evento => evento.EventoId == requisicao.EventoId, cancellationToken);
 
         if (pedido is null)
         {
@@ -76,8 +76,8 @@ public sealed class PedidoProcessamentoRepositorio(ApplicationDbContext contexto
                 requisicao.EventoId,
                 requisicao.DataHoraEvento.ToUniversalTime(),
                 requisicao.SalvoEm.ToUniversalTime());
-            contextoBanco.Eventos.Add(pedido);
-            await contextoBanco.SaveChangesAsync(tokenCancelamento);
+            dbContext.Eventos.Add(pedido);
+            await dbContext.SaveChangesAsync(cancellationToken);
         }
 
         var statusRegistrados = pedido.HistoricoStatus
@@ -85,14 +85,14 @@ public sealed class PedidoProcessamentoRepositorio(ApplicationDbContext contexto
             .ToHashSet();
 
         foreach (var transicao in transicoes.Where(transicao => !statusRegistrados.Contains(transicao.Status)))
-            contextoBanco.PedidoStatus.Add(new PedidoStatus(
+            dbContext.PedidoStatus.Add(new PedidoStatus(
                 0,
                 pedido.Id,
                 transicao.Status,
                 transicao.RegistradoEm.ToUniversalTime(),
                 transicao.Detalhe));
 
-        await contextoBanco.SaveChangesAsync(tokenCancelamento);
-        await transacao.CommitAsync(tokenCancelamento);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
     }
 }

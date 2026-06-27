@@ -6,21 +6,21 @@ namespace ES2_SistemaPedidos.PersistenciaApi.Controllers;
 
 [ApiController]
 [Route("api/processamentos/pedidos")]
-public sealed class ProcessamentoController(IPedidoProcessamentoRepositorio repositorio) : ControllerBase
+public sealed class ProcessamentoController(IPedidoProcessamentoRepositorio repository) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> RegistrarEventoAsync(RequisicaoProcessamentoPedido pedido,
-        CancellationToken tokenCancelamento)
+        CancellationToken cancellationToken)
     {
-        await repositorio.RegistrarEventoAsync(pedido, tokenCancelamento);
+        await repository.RegistrarEventoAsync(pedido, cancellationToken);
         return NoContent();
     }
 
     [HttpPost("erro")]
     public async Task<IActionResult> RegistrarErroAsync(RequisicaoErroProcessamentoPedido requisicao,
-        CancellationToken tokenCancelamento)
+        CancellationToken cancellationToken)
     {
-        await repositorio.RegistrarErroAsync(requisicao.Pedido, requisicao.Detalhe, tokenCancelamento);
+        await repository.RegistrarErroAsync(requisicao.Pedido, requisicao.Detalhe, cancellationToken);
         return NoContent();
     }
 }

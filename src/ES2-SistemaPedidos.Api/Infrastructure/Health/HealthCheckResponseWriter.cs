@@ -5,26 +5,26 @@ namespace ES2_SistemaPedidos.Api.Infrastructure.Health;
 
 public static class HealthCheckResponseWriter
 {
-    private static readonly JsonSerializerOptions OpcoesJson = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
-    public static Task EscreverAsync(HttpContext contexto, HealthReport relatorio)
+    public static Task WriteAsync(HttpContext context, HealthReport report)
     {
-        contexto.Response.ContentType = "application/json; charset=utf-8";
+        context.Response.ContentType = "application/json; charset=utf-8";
 
-        var resposta = new
+        var response = new
         {
-            estado = relatorio.Status.ToString().ToLowerInvariant(),
-            duracao = relatorio.TotalDuration,
-            verificacoes = relatorio.Entries.ToDictionary(
-                entrada => entrada.Key,
-                entrada => new
+            estado = report.Status.ToString().ToLowerInvariant(),
+            duracao = report.TotalDuration,
+            verificacoes = report.Entries.ToDictionary(
+                entry => entry.Key,
+                entry => new
                 {
-                    estado = entrada.Value.Status.ToString().ToLowerInvariant(),
-                    descricao = entrada.Value.Description,
-                    duracao = entrada.Value.Duration
+                    estado = entry.Value.Status.ToString().ToLowerInvariant(),
+                    descricao = entry.Value.Description,
+                    duracao = entry.Value.Duration
                 })
         };
 
-        return contexto.Response.WriteAsync(JsonSerializer.Serialize(resposta, OpcoesJson));
+        return context.Response.WriteAsync(JsonSerializer.Serialize(response, JsonOptions));
     }
 }

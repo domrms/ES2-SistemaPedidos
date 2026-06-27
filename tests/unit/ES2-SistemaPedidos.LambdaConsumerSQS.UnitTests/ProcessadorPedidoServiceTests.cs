@@ -72,10 +72,11 @@ public sealed class ProcessadorPedidoServiceTests
         var evento = new EventoSolicitacaoCliente(3, 4, "ES2-12345678-123000", AgoraUtc);
         var corpo = JsonSerializer.Serialize(evento, new JsonSerializerOptions(JsonSerializerDefaults.Web));
 
-        var excecao = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             servico.ProcessMessageAsync("mensagem-4", corpo, CancellationToken.None));
 
-        Assert.Equal("Falha simulada", excecao.Message);
+        Assert.Equal("Falha ao processar o evento ES2-12345678-123000.", exception.Message);
+        Assert.Equal("Falha simulada", exception.InnerException?.Message);
         Assert.Single(repository.Erros);
         Assert.Equal("Falha durante o processamento da solicitacao.", repository.Erros[0].Detalhe);
     }

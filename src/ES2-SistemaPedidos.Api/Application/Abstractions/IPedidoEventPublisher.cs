@@ -4,5 +4,5 @@ namespace ES2_SistemaPedidos.Api.Application.Abstractions;
 
 public interface IPublicadorEventoSolicitacao
 {
-    Task PublicarAsync(EventoSolicitacaoCliente evento, CancellationToken tokenCancelamento);
+    Task PublicarAsync(EventoSolicitacaoCliente evento, CancellationToken cancellationToken);
 }

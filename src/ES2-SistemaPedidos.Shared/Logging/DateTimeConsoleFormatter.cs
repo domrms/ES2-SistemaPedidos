@@ -6,16 +6,16 @@ namespace ES2_SistemaPedidos.Shared.Logging;
 
 public sealed class DateTimeConsoleFormatter : ITextFormatter
 {
-    private static readonly TimeSpan DeslocamentoBrasilia = TimeSpan.FromHours(-3);
+    private static readonly TimeSpan BrasiliaOffset = TimeSpan.FromHours(-3);
 
     public void Format(LogEvent logEvent, TextWriter output)
     {
-        var timestampBrasilia = logEvent.Timestamp.ToUniversalTime().ToOffset(DeslocamentoBrasilia);
+        var brasiliaTimestamp = logEvent.Timestamp.ToUniversalTime().ToOffset(BrasiliaOffset);
 
         output.Write('[');
-        output.Write(timestampBrasilia.ToString("yyyy-MM-dd HH:mm:ss.fff zzz", CultureInfo.InvariantCulture));
+        output.Write(brasiliaTimestamp.ToString("yyyy-MM-dd HH:mm:ss.fff zzz", CultureInfo.InvariantCulture));
         output.Write(' ');
-        output.Write(AbreviarNivel(logEvent.Level));
+        output.Write(AbbreviateLevel(logEvent.Level));
         output.Write("] ");
 
         logEvent.RenderMessage(output, CultureInfo.InvariantCulture);
@@ -24,9 +24,9 @@ public sealed class DateTimeConsoleFormatter : ITextFormatter
         if (logEvent.Exception is not null) output.WriteLine(logEvent.Exception);
     }
 
-    private static string AbreviarNivel(LogEventLevel nivel)
+    private static string AbbreviateLevel(LogEventLevel level)
     {
-        return nivel switch
+        return level switch
         {
             LogEventLevel.Verbose => "VRB",
             LogEventLevel.Debug => "DBG",
@@ -34,7 +34,7 @@ public sealed class DateTimeConsoleFormatter : ITextFormatter
             LogEventLevel.Warning => "WRN",
             LogEventLevel.Error => "ERR",
             LogEventLevel.Fatal => "FTL",
-            _ => nivel.ToString().ToUpperInvariant()
+            _ => level.ToString().ToUpperInvariant()
         };
     }
 }

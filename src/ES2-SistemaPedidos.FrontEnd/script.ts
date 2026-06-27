@@ -366,8 +366,8 @@ function getErrorMessage(error: unknown): string {
     return error instanceof Error ? error.message : String(error);
 }
 
-window.checkHealth = checkHealth;
-window.criarSolicitacao = criarSolicitacao;
-window.carregarEventos = carregarEventos;
-window.consultarHistorico = consultarHistorico;
-window.consultarHistoricoPorId = consultarHistoricoPorId;
+globalThis.checkHealth = checkHealth;
+globalThis.criarSolicitacao = criarSolicitacao;
+globalThis.carregarEventos = carregarEventos;
+globalThis.consultarHistorico = consultarHistorico;
+globalThis.consultarHistoricoPorId = consultarHistoricoPorId;

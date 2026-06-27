@@ -1,8 +1,11 @@
 using ES2_SistemaPedidos.Shared.Domain;
+using System.Text.Json.Serialization;
 
 namespace ES2_SistemaPedidos.Api;
 
-public sealed record RequisicaoCriarSolicitacao(int ClienteId, int ProdutoId);
+public sealed record RequisicaoCriarSolicitacao(
+    [property: JsonRequired] int ClienteId,
+    [property: JsonRequired] int ProdutoId);
 
 public sealed record RespostaCriarSolicitacao(
     int ClienteId,
@@ -41,19 +44,19 @@ public enum TipoResultadoConsulta
 
 public sealed record ResultadoConsulta<T>(TipoResultadoConsulta Tipo, T? Valor, RespostaErro? Erro)
 {
-    public static ResultadoConsulta<T> Sucesso(T valor)
+    public static ResultadoConsulta<T> Sucesso(T value)
     {
-        return new ResultadoConsulta<T>(TipoResultadoConsulta.Sucesso, valor, null);
+        return new ResultadoConsulta<T>(TipoResultadoConsulta.Sucesso, value, null);
     }
 
-    public static ResultadoConsulta<T> RequisicaoInvalida(RespostaErro erro)
+    public static ResultadoConsulta<T> RequisicaoInvalida(RespostaErro error)
     {
-        return new ResultadoConsulta<T>(TipoResultadoConsulta.RequisicaoInvalida, default, erro);
+        return new ResultadoConsulta<T>(TipoResultadoConsulta.RequisicaoInvalida, default, error);
     }
 
-    public static ResultadoConsulta<T> NaoEncontrado(RespostaErro erro)
+    public static ResultadoConsulta<T> NaoEncontrado(RespostaErro error)
     {
-        return new ResultadoConsulta<T>(TipoResultadoConsulta.NaoEncontrado, default, erro);
+        return new ResultadoConsulta<T>(TipoResultadoConsulta.NaoEncontrado, default, error);
     }
 }
 
