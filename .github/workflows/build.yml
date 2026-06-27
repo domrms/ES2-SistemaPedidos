@@ -69,9 +69,9 @@ jobs:
             /k:"domrms_es2-sistemapedidos" `
             /o:"domrms" `
             /d:sonar.token="${{ secrets.SONAR_TOKEN }}" `
-            /d:sonar.exclusions=".github/workflows/**,database/**,docker/**,tests/e2e/**,tests/sast/**,src/ES2-SistemaPedidos.FrontEnd/node_modules/**,src/ES2-SistemaPedidos.FrontEnd/coverage/**,src/ES2-SistemaPedidos.FrontEnd/vitest.config.ts" `
+            /d:sonar.exclusions=".github/workflows/**,database/**,docker/**,tests/e2e/**,tests/sast/**,src/ES2-SistemaPedidos.FrontEnd/node_modules/**,src/ES2-SistemaPedidos.FrontEnd/coverage/**,src/ES2-SistemaPedidos.FrontEnd/dist/**,src/ES2-SistemaPedidos.FrontEnd/vitest.config.ts" `
             /d:sonar.test.inclusions="src/ES2-SistemaPedidos.FrontEnd/**/*.test.ts" `
-            /d:sonar.coverage.exclusions="tests/unit/**,src/**/Program.cs,src/ES2-SistemaPedidos.FrontEnd/index.html,src/ES2-SistemaPedidos.FrontEnd/styles.css,src/ES2-SistemaPedidos.FrontEnd/script.js,src/ES2-SistemaPedidos.FrontEnd/**/*.test.ts" `
+            /d:sonar.coverage.exclusions="tests/unit/**,src/**/Program.cs,src/ES2-SistemaPedidos.FrontEnd/index.html,src/ES2-SistemaPedidos.FrontEnd/styles.css,src/ES2-SistemaPedidos.FrontEnd/**/*.test.ts" `
             /d:sonar.javascript.lcov.reportPaths="src/ES2-SistemaPedidos.FrontEnd/coverage/lcov.info" `
             /d:sonar.cs.opencover.reportsPaths="TestResults/**/coverage.opencover.xml" `
             /d:sonar.cs.vstest.reportsPaths="TestResults/**/*.trx"

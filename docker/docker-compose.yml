@@ -117,6 +117,20 @@ services:
     networks:
       - es2-sistema-pedidos
 
+  frontend:
+    image: es2-sistema-pedidos-frontend:latest
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    container_name: es2-sistema-pedidos-frontend
+    depends_on:
+      api:
+        condition: service_started
+    ports:
+      - "8000:80"
+    networks:
+      - es2-sistema-pedidos
+
   persistencia-api:
     image: es2-sistema-pedidos-persistencia-api:latest
     build:
