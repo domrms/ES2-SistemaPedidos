@@ -6,7 +6,7 @@ using ES2_SistemaPedidos.Api.Application.Abstractions;
 using ES2_SistemaPedidos.Api.Application.Pedidos;
 using ES2_SistemaPedidos.Api.Infrastructure.Messaging;
 using ES2_SistemaPedidos.Api.Infrastructure.Health;
-using ES2_SistemaPedidos.Shared;
+using ES2_SistemaPedidos.Api.Infrastructure.Persistencia;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Serilog;
 
@@ -39,16 +39,28 @@ construtorAplicacao.Services
 
 construtorAplicacao.Services.AddEndpointsApiExplorer();
 construtorAplicacao.Services.AddSwaggerGen();
-construtorAplicacao.Services.AddPersistenciaPedidos(construtorAplicacao.Configuration);
 construtorAplicacao.Services.AddScoped<PedidoService>();
 construtorAplicacao.Services.AddSingleton(TimeProvider.System);
 construtorAplicacao.Services.AddSingleton<IPublicadorEventoSolicitacao, PedidoPublisherEventSqs>();
+construtorAplicacao.Services.AddHttpClient<IPersistenciaPedidosClient, PersistenciaPedidosHttpClient>(cliente =>
+{
+    var urlBase = construtorAplicacao.Configuration["PersistenciaApi:UrlBase"]
+                  ?? "http://localhost:5080";
+    cliente.BaseAddress = new Uri(urlBase);
+    cliente.Timeout = TimeSpan.FromSeconds(10);
+});
 construtorAplicacao.Services.AddHttpClient("FlociHealthCheck", cliente =>
 {
     cliente.Timeout = TimeSpan.FromSeconds(5);
 });
+construtorAplicacao.Services.AddHttpClient(nameof(PersistenciaApiHealthCheck), cliente =>
+{
+    cliente.BaseAddress = new Uri(construtorAplicacao.Configuration["PersistenciaApi:UrlBase"]
+                                  ?? "http://localhost:5080");
+    cliente.Timeout = TimeSpan.FromSeconds(5);
+});
 construtorAplicacao.Services.AddHealthChecks()
-    .AddCheck<PostgresHealthCheck>("postgresql", tags: ["ready"])
+    .AddCheck<PersistenciaApiHealthCheck>("persistencia-api", tags: ["ready"])
     .AddCheck<FlociHealthCheck>("floci", tags: ["ready"]);
 construtorAplicacao.Services.AddSingleton<IAmazonSQS>(_ =>
 {

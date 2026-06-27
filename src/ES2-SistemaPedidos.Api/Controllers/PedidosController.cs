@@ -1,8 +1,6 @@
-using System.Data.Common;
 using Amazon.Runtime;
 using ES2_SistemaPedidos.Api.Application.Pedidos;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace ES2_SistemaPedidos.Api.Controllers;
 
@@ -21,15 +19,13 @@ public sealed class PedidosController(PedidoService pedidoService) : ControllerB
         }
         catch (Exception excecao) when (IsFalhaDependencia(excecao))
         {
-            return StatusCode(
-                StatusCodes.Status503ServiceUnavailable,
-                new RespostaErro("ServicoIndisponivel", "Banco de dados ou mensageria temporariamente indisponivel",
+            return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                new RespostaErro("ServicoIndisponivel",
+                    "API de persistencia ou mensageria temporariamente indisponivel",
                     new { tentarNovamenteApos = 30 }));
         }
 
-        return resultado.Match<IActionResult>(
-            Accepted,
-            BadRequest);
+        return resultado.Match<IActionResult>(Accepted, BadRequest);
     }
 
     [HttpGet("eventos")]
@@ -37,14 +33,12 @@ public sealed class PedidosController(PedidoService pedidoService) : ControllerB
     {
         try
         {
-            var resposta = await pedidoService.ListarEventosAsync(tokenCancelamento);
-            return Ok(resposta);
+            return Ok(await pedidoService.ListarEventosAsync(tokenCancelamento));
         }
         catch (Exception excecao) when (IsFalhaDependencia(excecao))
         {
-            return StatusCode(
-                StatusCodes.Status503ServiceUnavailable,
-                new RespostaErro("ServicoIndisponivel", "Banco de dados temporariamente indisponivel",
+            return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                new RespostaErro("ServicoIndisponivel", "API de persistencia temporariamente indisponivel",
                     new { tentarNovamenteApos = 30 }));
         }
     }
@@ -65,19 +59,15 @@ public sealed class PedidosController(PedidoService pedidoService) : ControllerB
         }
         catch (Exception excecao) when (IsFalhaDependencia(excecao))
         {
-            return StatusCode(
-                StatusCodes.Status503ServiceUnavailable,
-                new RespostaErro("ServicoIndisponivel", "Banco de dados temporariamente indisponivel",
+            return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                new RespostaErro("ServicoIndisponivel", "API de persistencia temporariamente indisponivel",
                     new { tentarNovamenteApos = 30 }));
         }
     }
 
     private static bool IsFalhaDependencia(Exception excecao)
     {
-        return excecao is DbUpdateException
-                   or DbException
-                   or AmazonServiceException
-                   or HttpRequestException
+        return excecao is AmazonServiceException or HttpRequestException
                || (excecao is InvalidOperationException invalidOperationException
                    && invalidOperationException.Message.Contains("SQS", StringComparison.OrdinalIgnoreCase));
     }

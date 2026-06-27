@@ -13,8 +13,6 @@
         <PackageReference Include="Amazon.Lambda.Core" Version="2.8.1"/>
         <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.5"/>
         <PackageReference Include="Amazon.Lambda.SQSEvents" Version="2.2.1"/>
-        <PackageReference Include="Dapper" Version="2.1.66"/>
-        <PackageReference Include="Npgsql" Version="9.0.4"/>
         <PackageReference Include="Serilog.AspNetCore" Version="10.0.0"/>
     </ItemGroup>
 

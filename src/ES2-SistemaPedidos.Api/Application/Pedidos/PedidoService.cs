@@ -2,17 +2,13 @@ using System.Globalization;
 using System.Security.Cryptography;
 using ES2_SistemaPedidos.Api.Application.Abstractions;
 using ES2_SistemaPedidos.Shared.Contracts;
-using ES2_SistemaPedidos.Shared.Domain.Repositories;
 
 namespace ES2_SistemaPedidos.Api.Application.Pedidos;
 
 public sealed class PedidoService(
-    IClienteRepositorio clienteRepositorio,
-    IProdutoRepositorio produtoRepositorio,
-    IEventoRepositorio eventoRepositorio,
+    IPersistenciaPedidosClient persistenciaPedidos,
     IPublicadorEventoSolicitacao publicadorEvento,
-    TimeProvider provedorTempo,
-    IPedidoStatusRepositorio? pedidoStatusRepositorio = null)
+    TimeProvider provedorTempo)
 {
     public async Task<Resultado<RespostaCriarSolicitacao>> CriarSolicitacaoAsync(
         RequisicaoCriarSolicitacao requisicao,
@@ -30,13 +26,13 @@ public sealed class PedidoService(
                 "A validacao da solicitacao falhou",
                 [new ErroValidacao("produtoId", "O produtoId deve ser maior que zero.")]));
 
-        if (!await clienteRepositorio.ExisteClienteAsync(requisicao.ClienteId, tokenCancelamento))
+        if (!await persistenciaPedidos.ExisteClienteAsync(requisicao.ClienteId, tokenCancelamento))
             return Resultado<RespostaCriarSolicitacao>.ValidationFailed(new RespostaErroValidacao(
                 "ValidacaoFalhou",
                 "A validacao da solicitacao falhou",
                 [new ErroValidacao("clienteId", $"Cliente {requisicao.ClienteId} nao encontrado.")]));
 
-        if (!await produtoRepositorio.ExisteProdutoAsync(requisicao.ProdutoId, tokenCancelamento))
+        if (!await persistenciaPedidos.ExisteProdutoAsync(requisicao.ProdutoId, tokenCancelamento))
             return Resultado<RespostaCriarSolicitacao>.ValidationFailed(new RespostaErroValidacao(
                 "ValidacaoFalhou",
                 "A validacao da solicitacao falhou",
@@ -60,7 +56,7 @@ public sealed class PedidoService(
 
     public async Task<RespostaListarEventos> ListarEventosAsync(CancellationToken tokenCancelamento)
     {
-        var eventos = await eventoRepositorio.ListarTodosEventosAsync(tokenCancelamento);
+        var eventos = await persistenciaPedidos.ListarEventosAsync(tokenCancelamento);
         var eventosDetalhados = eventos.Select(e => new RespostaEventoDetalhado(
                 e.Id,
                 e.NomeCliente,
@@ -81,16 +77,13 @@ public sealed class PedidoService(
                 "PedidoIdInvalido",
                 "O id do pedido deve ser maior que zero."));
 
-        if (pedidoStatusRepositorio is null)
-            throw new InvalidOperationException("Repositorio de historico de pedidos nao configurado.");
-
-        var historico = await pedidoStatusRepositorio.ObterHistoricoAsync(pedidoId, tokenCancelamento);
+        var historico = await persistenciaPedidos.ObterHistoricoAsync(pedidoId, tokenCancelamento);
         if (historico is null)
             return ResultadoConsulta<RespostaHistoricoPedido>.NaoEncontrado(new RespostaErro(
                 "PedidoNaoEncontrado",
                 $"Pedido {pedidoId} nao encontrado."));
 
-        var transicoes = historico.Transicoes
+        var transicoes = historico.Historico
             .Select(transicao => new RespostaTransicaoPedido(
                 transicao.Id,
                 transicao.Status,

@@ -5,11 +5,11 @@ Projeto demonstrativo de um sistema de pedidos com API HTTP, processamento assin
 O fluxo principal e:
 
 1. A API recebe uma solicitacao de cliente/produto.
-2. A API valida cliente e produto no banco.
+2. A API principal valida cliente e produto pela API de persistencia, que usa cache nessas leituras.
 3. A API publica um evento na fila SQS local.
 4. A Lambda consumidora processa a mensagem.
-5. A Lambda grava o evento na tabela `eventos`.
-6. A API permite consultar os eventos registrados.
+5. A Lambda envia o processamento para a API de persistencia.
+6. A API de persistencia grava o evento/status e atende as consultas de eventos e historico.
 
 ## Tecnologias
 
@@ -17,8 +17,9 @@ O fluxo principal e:
 - .NET 8 para a Lambda e testes E2E.
 - ASP.NET Core Web API.
 - PostgreSQL 15.
-- Entity Framework Core/Npgsql no projeto compartilhado.
-- Dapper/Npgsql no consumer Lambda.
+- Entity Framework Core/Npgsql na API de persistencia.
+- Cache em memoria para consultas de existencia de clientes e produtos.
+- Cliente HTTP no consumer Lambda, sem acesso direto ao PostgreSQL.
 - Amazon SQS SDK e eventos Lambda SQS.
 - Serilog para logs.
 - Swagger/OpenAPI.
@@ -42,9 +43,11 @@ O fluxo principal e:
 |   |-- data/                   # Estado local persistido do emulador AWS
 |   |-- docker-compose.yml      # Orquestracao local completa
 |   |-- Dockerfile.api          # Build da API
+|   |-- Dockerfile.persistencia-api # Build da API de persistencia
 |   `-- Dockerfile.lambda       # Build da Lambda consumidora
 |-- src/
 |   |-- ES2-SistemaPedidos.Api/
+|   |-- ES2-SistemaPedidos.PersistenciaApi/
 |   |-- ES2-SistemaPedidos.FrontEnd/
 |   |-- ES2-SistemaPedidos.LambdaConsumerSQS/
 |   `-- ES2-SistemaPedidos.Shared/
@@ -61,7 +64,8 @@ O fluxo principal e:
 
 ### `src/ES2-SistemaPedidos.Api`
 
-API ASP.NET Core responsavel por expor os endpoints HTTP, validar solicitacoes e publicar eventos na fila SQS.
+API ASP.NET Core responsavel por expor os endpoints publicos, validar solicitacoes por meio da API de persistencia e
+publicar eventos na fila SQS.
 
 Principais pastas:
 
@@ -77,25 +81,41 @@ Funcionalidades:
 - Health check da API.
 - Criacao de solicitacao de pedido.
 - Validacao de `clienteId` e `produtoId`.
-- Validacao de existencia de cliente/produto no banco.
+- Validacao de existencia de cliente/produto via cliente HTTP tipado.
 - Geracao de `eventoId` no formato `ES2-00000000-HHmmss`.
 - Conversao de data/hora para fuso de Brasilia.
 - Publicacao do evento no SQS.
 - Consulta de eventos gravados.
-- Tratamento de falhas de banco/mensageria com HTTP `503`.
+- Tratamento de falhas da API de persistencia/mensageria com HTTP `503`.
 - Swagger habilitado.
 - CORS liberado para qualquer origem.
 
+### `src/ES2-SistemaPedidos.PersistenciaApi`
+
+API interna que concentra todas as operacoes no PostgreSQL. Ela expoe consultas de clientes, produtos, eventos e
+historico, alem dos comandos transacionais de processamento enviados pela Lambda. As consultas de cliente e produto
+usam `IMemoryCache`, com duracao configuravel em `Cache:DuracaoSegundos` (padrao: 300 segundos).
+
+Endpoints internos:
+
+- `GET /api/consultas/clientes/{id}/existe`
+- `GET /api/consultas/produtos/{id}/existe`
+- `GET /api/consultas/eventos`
+- `GET /api/consultas/pedidos/{id}/historico`
+- `POST /api/processamentos/pedidos`
+- `POST /api/processamentos/pedidos/erro`
+- `GET /api/healthcheck`
+
 ### `src/ES2-SistemaPedidos.LambdaConsumerSQS`
 
-Aplicacao Lambda responsavel por consumir mensagens SQS e persistir eventos no banco.
+Aplicacao Lambda responsavel por consumir mensagens SQS e solicitar a persistencia dos eventos pela API interna.
 
 Principais pastas:
 
-- `Application/Abstractions`: contrato `IPedidoProcessamentoRepository`.
+- `Application/Abstractions`: contrato HTTP `IPedidoProcessamentoClient`.
 - `Application/Models`: modelo interno `EventoProcessamento`.
 - `Application/Services`: servico `ProcessadorPedidoService`.
-- `Infrastructure/Data`: repositorio Dapper/Npgsql.
+- `Infrastructure/Persistencia`: cliente HTTP da API de persistencia.
 - `Function.cs`: handler Lambda para `SQSEvent`.
 - `Program.cs`: ponto de entrada console informativo.
 - `aws-lambda-tools-defaults.json`: configuracao da Lambda para tooling local/AWS.
@@ -104,7 +124,7 @@ Funcionalidades:
 
 - Desserializa mensagens no contrato compartilhado `EventoSolicitacaoCliente`.
 - Valida payload recebido.
-- Persiste eventos na tabela `eventos`.
+- Solicita a persistencia de eventos e status pela API interna.
 - Usa `ON CONFLICT (evento_id) DO NOTHING` para idempotencia.
 - Retorna `SQSBatchResponse` com falhas por mensagem.
 - Suporta `ReportBatchItemFailures` no event source mapping.
@@ -123,16 +143,13 @@ Principais pastas:
 
 - `Contracts`: contrato de evento publicado na fila.
 - `Data`: `ApplicationDbContext` e configuracao EF Core.
-- `Data/Repository`: repositorios de consulta para cliente, produto e eventos.
 - `Domain`: entidades `Cliente`, `Produto` e `EventoCliente`.
-- `Domain/Repositories`: interfaces dos repositorios.
 - `Logging`: formatter de console com data/hora em Brasilia.
 
 Funcionalidades:
 
 - Mapeamento das tabelas `clientes`, `produtos` e `eventos`.
-- Injecao de dependencias de persistencia com `AddPersistenciaPedidos`.
-- Repositorios para validar cliente/produto e listar eventos detalhados.
+- Registro isolado do contexto EF Core com `AddBancoPedidos`.
 - Contrato compartilhado da mensagem SQS.
 
 ### `src/ES2-SistemaPedidos.FrontEnd`
@@ -200,7 +217,7 @@ http://localhost:5000
 
 ### `GET /api/healthcheck`
 
-Verifica ativamente a conectividade com PostgreSQL e Floci. Retorna `503 Service Unavailable` se uma dependencia
+Verifica ativamente a conectividade com a API de persistencia e o Floci. Retorna `503 Service Unavailable` se uma dependencia
 estiver indisponivel.
 
 Resposta `200 OK`:
@@ -210,9 +227,9 @@ Resposta `200 OK`:
   "estado": "healthy",
   "duracao": "00:00:00.0123456",
   "verificacoes": {
-    "postgresql": {
+    "persistencia-api": {
       "estado": "healthy",
-      "descricao": "Conexao com PostgreSQL disponivel."
+      "descricao": "API de persistencia disponivel."
     },
     "floci": {
       "estado": "healthy",
@@ -261,12 +278,12 @@ Resposta `400 Bad Request` para validacao:
 }
 ```
 
-Resposta `503 Service Unavailable` para falhas temporarias de banco ou mensageria:
+Resposta `503 Service Unavailable` para falhas temporarias da API de persistencia ou mensageria:
 
 ```json
 {
   "erro": "ServicoIndisponivel",
-  "mensagem": "Banco de dados ou mensageria temporariamente indisponivel",
+  "mensagem": "API de persistencia ou mensageria temporariamente indisponivel",
   "detalhes": {
     "tentarNovamenteApos": 30
   }
@@ -334,16 +351,17 @@ IDs menores ou iguais a zero retornam `400 Bad Request`; pedidos inexistentes re
 
 ### Connection string
 
-A API usa a primeira configuracao disponivel nesta ordem:
+A API de persistencia usa a primeira configuracao disponivel nesta ordem:
 
 1. `ConnectionStrings:BancoPedidos`
 2. `DATABASE_URL`
 3. Valor padrao: `Host=localhost;Port=5432;Database=es2_pedidos;Username=dev;Password=dev`
 
-A Lambda exige:
+### API de persistencia e cache
 
-1. `ConnectionStrings:BancoPedidos`
-2. `DATABASE_URL`
+A API principal e a Lambda localizam o servico interno por `PersistenciaApi:UrlBase` (padrao
+`http://localhost:5080`). No Docker Compose, o valor e `http://persistencia-api:8080`. Somente a API de persistencia
+recebe a connection string. A duracao do cache de cliente/produto e configurada por `Cache:DuracaoSegundos`.
 
 ### AWS/SQS da API
 
@@ -376,7 +394,7 @@ http://floci:4566/000000000000/processamento-solicitacoes
 
 ## Como Executar com Docker Compose
 
-Este e o caminho recomendado para executar o fluxo completo API -> SQS -> Lambda -> PostgreSQL.
+Este e o caminho recomendado para executar o fluxo completo API -> SQS -> Lambda -> API de persistencia -> PostgreSQL.
 
 Pre-requisitos:
 
@@ -395,6 +413,7 @@ Servicos iniciados:
 - `floci`: emulador AWS local em `localhost:4566`.
 - `lambda-consumer-sqs-image`: build da imagem Lambda.
 - `aws-init`: cria SQS, DLQ, Lambda e trigger SQS -> Lambda.
+- `persistencia-api`: API interna de leitura/escrita em `http://localhost:8081`.
 - `api`: API em `http://localhost:8080`.
 
 URLs uteis:
@@ -402,6 +421,7 @@ URLs uteis:
 - API: `http://localhost:8080`
 - Swagger: `http://localhost:8080/swagger`
 - Health check: `http://localhost:8080/api/healthcheck`
+- API de persistencia/Swagger: `http://localhost:8081/swagger`
 - Emulador AWS: `http://localhost:4566`
 - PostgreSQL: `localhost:5432`
 
@@ -419,13 +439,20 @@ docker compose -f docker/docker-compose.yml down -v
 
 ## Como Executar Localmente sem Docker para a API
 
-Para rodar a API diretamente com `dotnet run`, voce ainda precisa de PostgreSQL e SQS disponiveis.
+Para rodar a API principal diretamente, voce precisa iniciar tambem a API de persistencia, alem de PostgreSQL e SQS.
 
 Restaurar e compilar:
 
 ```powershell
 dotnet restore ES2-SistemaPedidos.sln
 dotnet build ES2-SistemaPedidos.sln
+```
+
+Inicie a API de persistencia (porta sugerida `5080`) e depois a API principal:
+
+```powershell
+dotnet run --project src/ES2-SistemaPedidos.PersistenciaApi/ES2-SistemaPedidos.PersistenciaApi.csproj --urls http://localhost:5080
+dotnet run --project src/ES2-SistemaPedidos.Api/ES2-SistemaPedidos.Api.csproj
 ```
 
 Rodar a API no perfil local:
@@ -447,7 +474,7 @@ $env:ASPNETCORE_ENVIRONMENT = "Development"
 $env:AWS__Regiao = "us-east-1"
 $env:AWS__ServiceUrl = "http://localhost:4566"
 $env:SQS_FILA_URL = "http://localhost:4566/000000000000/processamento-solicitacoes"
-$env:ConnectionStrings__BancoPedidos = "Host=localhost;Port=5432;Database=es2_pedidos;Username=dev;Password=dev"
+$env:PersistenciaApi__UrlBase = "http://localhost:5080"
 dotnet run --project src/ES2-SistemaPedidos.Api/ES2-SistemaPedidos.Api.csproj
 ```
 
@@ -550,7 +577,15 @@ Cobrem:
 - Processamento de payload valido.
 - Rejeicao de payload invalido.
 - Rejeicao de payload nulo.
-- Registro do evento no repositorio.
+- Envio do evento para a API de persistencia e tratamento de falhas HTTP.
+
+### Testes unitarios da API de persistencia
+
+```powershell
+dotnet test tests/unit/ES2-SistemaPedidos.PersistenciaApi.UnitTests/ES2-SistemaPedidos.PersistenciaApi.UnitTests.csproj
+```
+
+Cobrem o cache de cliente/produto e a delegacao dos comandos de processamento ao repository transacional.
 
 ### Testes unitarios do projeto compartilhado
 
@@ -606,7 +641,7 @@ Cenarios E2E:
 
 1. `PedidosController.CriarSolicitacaoAsync` recebe o POST.
 2. `PedidoService.CriarSolicitacaoAsync` valida IDs maiores que zero.
-3. O servico consulta `IClienteRepositorio` e `IProdutoRepositorio`.
+3. O servico usa `IPersistenciaPedidosClient`; a API de persistencia acessa os repositories e armazena cliente/produto em cache.
 4. O servico gera data/hora em Brasilia e `eventoId`.
 5. `PedidoPublisherEventSqs` serializa `EventoSolicitacaoCliente`.
 6. A mensagem e enviada para SQS com atributo `tipoEvento = SolicitacaoCliente`.
@@ -617,8 +652,9 @@ Cenarios E2E:
 1. O trigger SQS chama `Function.FunctionHandler`.
 2. A funcao percorre cada mensagem do lote.
 3. `ProcessadorPedidoService` desserializa e valida o payload.
-4. `PedidoProcessamentoRepositoryDapper` insere o evento no banco.
-5. Mensagens invalidas ou com erro sao retornadas em `BatchItemFailures`.
+4. `PedidoProcessamentoHttpClient` envia o comando para a API de persistencia.
+5. `PedidoProcessamentoRepositorio`, dentro da API, grava evento e status na mesma transacao EF Core.
+6. Mensagens invalidas ou com erro sao retornadas em `BatchItemFailures`.
 
 ## Logs
 
@@ -638,6 +674,7 @@ Verifique:
 
 - PostgreSQL esta rodando.
 - A connection string esta correta.
+- A API de persistencia esta rodando e `PersistenciaApi:UrlBase` esta correto.
 - Floci esta rodando na porta `4566`.
 - A fila SQS foi criada pelo `aws-init`.
 - `SQS_FILA_URL` aponta para a fila correta.
@@ -659,7 +696,7 @@ Verifique:
 - A Lambda foi criada pelo `aws-init`.
 - O trigger SQS -> Lambda existe.
 - A mensagem nao foi enviada para a DLQ.
-- A Lambda consegue conectar no banco.
+- A Lambda consegue acessar a API de persistencia.
 - Aguarde alguns segundos, pois o processamento e assincrono.
 
 ### Porta ocupada
@@ -668,6 +705,8 @@ Portas usadas por padrao:
 
 - API Docker: `8080`.
 - API local: `5000`.
+- API de persistencia Docker: `8081`.
+- API de persistencia local sugerida: `5080`.
 - PostgreSQL: `5432`.
 - Floci/AWS local: `4566`.
 - Frontend estatico sugerido: `8000`.
@@ -684,5 +723,6 @@ docker compose -f docker/docker-compose.yml up --build
 - A pasta `bin/` e `obj/` contem artefatos de build e nao fazem parte da estrutura logica do projeto.
 - O projeto `tests/integration` existe como area reservada, mas nao possui testes implementados no estado atual.
 - A API e a Lambda usam contratos compartilhados para evitar divergencia no payload do SQS.
+- Todos os repositories pertencem exclusivamente a API de persistencia; API principal, Lambda e Shared nao acessam o banco diretamente.
 - O banco evita duplicidade de eventos pelo indice unico em `evento_id`.
 - O fluxo completo depende de mensageria; para testar criacao de solicitacoes com sucesso, use a stack Docker completa ou configure SQS equivalente.

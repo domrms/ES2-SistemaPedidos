@@ -9,7 +9,7 @@ DLQ_NAME="${DLQ_NAME:-processamento-solicitacoes-dlq}"
 FUNCTION_NAME="${FUNCTION_NAME:-processador-pedidos-sqs}"
 ROLE_NAME="${ROLE_NAME:-lambda-sqs-role}"
 LAMBDA_IMAGE="${LAMBDA_IMAGE:-es2-sistema-pedidos-lambda-consumer-sqs:latest}"
-CONNECTION_STRING="${CONNECTION_STRING:-Host=postgres;Port=5432;Database=es2_pedidos;Username=dev;Password=dev}"
+PERSISTENCIA_API_URL="${PERSISTENCIA_API_URL:-http://persistencia-api:8080}"
 
 aws_local() {
   aws --endpoint-url "$AWS_ENDPOINT_URL" "$@"
@@ -67,7 +67,7 @@ cat > /tmp/lambda-environment.json <<EOF
   "Variables": {
     "ASPNETCORE_ENVIRONMENT": "Development",
     "DOTNET_ENVIRONMENT": "Development",
-    "ConnectionStrings__BancoPedidos": "$CONNECTION_STRING"
+    "PersistenciaApi__UrlBase": "$PERSISTENCIA_API_URL"
   }
 }
 EOF

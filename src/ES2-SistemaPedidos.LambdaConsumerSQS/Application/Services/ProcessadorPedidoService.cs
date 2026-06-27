@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 namespace ES2_SistemaPedidos.LambdaConsumerSQS.Application.Services;
 
 public sealed class ProcessadorPedidoService(
-    IPedidoProcessamentoRepository repository,
+    IPedidoProcessamentoClient clienteProcessamento,
     TimeProvider provedorTempo,
     ILogger<ProcessadorPedidoService> registrador)
 {
@@ -35,14 +35,14 @@ public sealed class ProcessadorPedidoService(
 
         try
         {
-            await repository.RegistrarEventoAsync(processamento, tokenCancelamento);
+            await clienteProcessamento.RegistrarEventoAsync(processamento, tokenCancelamento);
         }
         catch (Exception excecao)
         {
             registrador.LogError(excecao, "Falha ao processar o evento {EventoId}", evento.EventoId);
             try
             {
-                await repository.RegistrarErroAsync(
+                await clienteProcessamento.RegistrarErroAsync(
                     processamento,
                     "Falha durante o processamento da solicitacao.",
                     tokenCancelamento);

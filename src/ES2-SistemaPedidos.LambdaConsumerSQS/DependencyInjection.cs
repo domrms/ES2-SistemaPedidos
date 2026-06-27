@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using ES2_SistemaPedidos.LambdaConsumerSQS.Application.Abstractions;
 using ES2_SistemaPedidos.LambdaConsumerSQS.Application.Services;
-using ES2_SistemaPedidos.LambdaConsumerSQS.Infrastructure.Data;
+using ES2_SistemaPedidos.LambdaConsumerSQS.Infrastructure.Persistencia;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -14,7 +14,14 @@ public static class DependencyInjection
         IConfiguration configuracao)
     {
         servicos.AddSingleton(TimeProvider.System);
-        servicos.AddScoped<IPedidoProcessamentoRepository, PedidoProcessamentoRepositoryDapper>();
+        var urlBase = configuracao["PersistenciaApi:UrlBase"]
+                      ?? "http://localhost:5080";
+        servicos.AddSingleton(new HttpClient
+        {
+            BaseAddress = new Uri(urlBase),
+            Timeout = TimeSpan.FromSeconds(15)
+        });
+        servicos.AddScoped<IPedidoProcessamentoClient, PedidoProcessamentoHttpClient>();
         servicos.AddScoped<ProcessadorPedidoService>();
 
         return servicos;
