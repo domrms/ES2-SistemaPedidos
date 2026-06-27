@@ -4,7 +4,9 @@ using Amazon.SQS;
 using ES2_SistemaPedidos.Api.Application.Abstractions;
 using ES2_SistemaPedidos.Api.Application.Pedidos;
 using ES2_SistemaPedidos.Api.Infrastructure.Messaging;
+using ES2_SistemaPedidos.Api.Infrastructure.Health;
 using ES2_SistemaPedidos.Shared;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Serilog;
 
 var construtorAplicacao = WebApplication.CreateBuilder(args);
@@ -40,6 +42,13 @@ construtorAplicacao.Services.AddPersistenciaPedidos(construtorAplicacao.Configur
 construtorAplicacao.Services.AddScoped<PedidoService>();
 construtorAplicacao.Services.AddSingleton(TimeProvider.System);
 construtorAplicacao.Services.AddSingleton<IPublicadorEventoSolicitacao, PedidoPublisherEventSqs>();
+construtorAplicacao.Services.AddHttpClient("FlociHealthCheck", cliente =>
+{
+    cliente.Timeout = TimeSpan.FromSeconds(5);
+});
+construtorAplicacao.Services.AddHealthChecks()
+    .AddCheck<PostgresHealthCheck>("postgresql", tags: ["ready"])
+    .AddCheck<FlociHealthCheck>("floci", tags: ["ready"]);
 construtorAplicacao.Services.AddSingleton<IAmazonSQS>(_ =>
 {
     var nomeRegiao = construtorAplicacao.Configuration["AWS_REGIAO"]
@@ -73,6 +82,10 @@ aplicacao.UseSwagger();
 aplicacao.UseSwaggerUI();
 aplicacao.UseCors("AllowOrigins");
 aplicacao.MapControllers();
+aplicacao.MapHealthChecks("/api/healthcheck", new HealthCheckOptions
+{
+    ResponseWriter = HealthCheckResponseWriter.EscreverAsync
+});
 
 aplicacao.Run();
 

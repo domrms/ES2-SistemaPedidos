@@ -1,4 +1,5 @@
 #!/bin/sh
+# Scripts montados em containers Linux devem permanecer com finais de linha LF.
 set -eu
 
 AWS_ENDPOINT_URL="${AWS_ENDPOINT_URL:-http://floci:4566}"

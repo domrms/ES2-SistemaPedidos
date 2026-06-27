@@ -49,6 +49,48 @@ public sealed class EventoCliente
     public Cliente? Cliente { get; private set; }
 
     public Produto? Produto { get; private set; }
+
+    public IReadOnlyCollection<PedidoStatus> HistoricoStatus { get; private set; } = new List<PedidoStatus>();
+}
+
+public enum EstadoPedido
+{
+    Recebido,
+    Processando,
+    Concluido,
+    Erro
+}
+
+/// <summary>
+/// Registro imutavel de uma transicao de estado do pedido.
+/// </summary>
+public sealed class PedidoStatus
+{
+    private PedidoStatus()
+    {
+    }
+
+    public PedidoStatus(long id, long pedidoId, EstadoPedido status, DateTimeOffset registradoEm,
+        string? detalhe = null)
+    {
+        Id = id;
+        PedidoId = pedidoId;
+        Status = status;
+        RegistradoEm = registradoEm;
+        Detalhe = detalhe;
+    }
+
+    public long Id { get; private set; }
+
+    public long PedidoId { get; private set; }
+
+    public EstadoPedido Status { get; private set; }
+
+    public DateTimeOffset RegistradoEm { get; private set; }
+
+    public string? Detalhe { get; private set; }
+
+    public EventoCliente? Pedido { get; private set; }
 }
 
 public sealed class Produto

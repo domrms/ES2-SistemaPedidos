@@ -45,3 +45,29 @@ public sealed class EventoRepositorio(ApplicationDbContext contextoBanco) : IEve
         return eventos.AsReadOnly();
     }
 }
+
+public sealed class PedidoStatusRepositorio(ApplicationDbContext contextoBanco) : IPedidoStatusRepositorio
+{
+    public async Task<HistoricoPedidoDetalhado?> ObterHistoricoAsync(long pedidoId,
+        CancellationToken tokenCancelamento)
+    {
+        var pedido = await contextoBanco.Eventos
+            .AsNoTracking()
+            .Include(evento => evento.HistoricoStatus)
+            .SingleOrDefaultAsync(evento => evento.Id == pedidoId, tokenCancelamento);
+
+        if (pedido is null) return null;
+
+        var transicoes = pedido.HistoricoStatus
+            .OrderBy(status => status.Id)
+            .Select(status => new TransicaoPedidoDetalhada(
+                status.Id,
+                status.Status,
+                status.RegistradoEm,
+                status.Detalhe))
+            .ToList()
+            .AsReadOnly();
+
+        return new HistoricoPedidoDetalhado(pedido.Id, pedido.EventoId, transicoes);
+    }
+}

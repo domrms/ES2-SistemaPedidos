@@ -26,12 +26,35 @@ public sealed class ProcessadorPedidoService(
             return false;
         }
 
-        await repository.RegistrarEventoAsync(new EventoProcessamento(
+        var processamento = new EventoProcessamento(
             evento.ClienteId,
             evento.ProdutoId,
             evento.EventoId,
             evento.DataHoraRequisicao,
-            provedorTempo.GetUtcNow()), tokenCancelamento);
+            provedorTempo.GetUtcNow());
+
+        try
+        {
+            await repository.RegistrarEventoAsync(processamento, tokenCancelamento);
+        }
+        catch (Exception excecao)
+        {
+            registrador.LogError(excecao, "Falha ao processar o evento {EventoId}", evento.EventoId);
+            try
+            {
+                await repository.RegistrarErroAsync(
+                    processamento,
+                    "Falha durante o processamento da solicitacao.",
+                    tokenCancelamento);
+            }
+            catch (Exception falhaRegistroErro)
+            {
+                registrador.LogError(falhaRegistroErro,
+                    "Nao foi possivel registrar o estado de erro do evento {EventoId}", evento.EventoId);
+            }
+
+            throw;
+        }
 
         registrador.LogInformation(
             "Evento {EventoId} do cliente {ClienteId} e produto {ProdutoId} salvo no banco",

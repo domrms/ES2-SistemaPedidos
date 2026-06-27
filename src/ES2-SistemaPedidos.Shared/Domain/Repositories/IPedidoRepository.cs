@@ -15,6 +15,22 @@ public interface IEventoRepositorio
     Task<IReadOnlyCollection<EventoClienteDetalhado>> ListarTodosEventosAsync(CancellationToken tokenCancelamento);
 }
 
+public interface IPedidoStatusRepositorio
+{
+    Task<HistoricoPedidoDetalhado?> ObterHistoricoAsync(long pedidoId, CancellationToken tokenCancelamento);
+}
+
+public sealed record HistoricoPedidoDetalhado(
+    long PedidoId,
+    string EventoId,
+    IReadOnlyCollection<TransicaoPedidoDetalhada> Transicoes);
+
+public sealed record TransicaoPedidoDetalhada(
+    long Id,
+    EstadoPedido Status,
+    DateTimeOffset RegistradoEm,
+    string? Detalhe);
+
 public sealed record EventoClienteDetalhado(
     long Id,
     string NomeCliente,

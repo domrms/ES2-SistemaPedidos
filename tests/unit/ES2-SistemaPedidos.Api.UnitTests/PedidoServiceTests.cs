@@ -3,6 +3,7 @@ using ES2_SistemaPedidos.Api.Application.Abstractions;
 using ES2_SistemaPedidos.Api.Application.Pedidos;
 using ES2_SistemaPedidos.Shared.Contracts;
 using ES2_SistemaPedidos.Shared.Domain.Repositories;
+using ES2_SistemaPedidos.Shared.Domain;
 
 namespace ES2_SistemaPedidos.Api.UnitTests;
 
@@ -163,6 +164,53 @@ public sealed partial class PedidoServiceTests
         Assert.Equal("ES2-87654321-110000", segundo.EventoId);
     }
 
+    [Fact]
+    public async Task ObterHistoricoAsync_quando_id_invalido_retorna_requisicao_invalida()
+    {
+        var fixture = new Fixture();
+        var resultado = await fixture.CriarServico().ObterHistoricoAsync(0, CancellationToken.None);
+
+        Assert.Equal(TipoResultadoConsulta.RequisicaoInvalida, resultado.Tipo);
+        Assert.Equal("PedidoIdInvalido", resultado.Erro?.Erro);
+        Assert.Equal(0, fixture.StatusRepositorio.Consultas);
+    }
+
+    [Fact]
+    public async Task ObterHistoricoAsync_quando_pedido_nao_existe_retorna_nao_encontrado()
+    {
+        var fixture = new Fixture { Historico = null };
+        var resultado = await fixture.CriarServico().ObterHistoricoAsync(42, CancellationToken.None);
+
+        Assert.Equal(TipoResultadoConsulta.NaoEncontrado, resultado.Tipo);
+        Assert.Equal("PedidoNaoEncontrado", resultado.Erro?.Erro);
+    }
+
+    [Fact]
+    public async Task ObterHistoricoAsync_quando_pedido_existe_retorna_linha_do_tempo_ordenada()
+    {
+        var fixture = new Fixture
+        {
+            Historico = new HistoricoPedidoDetalhado(42, "ES2-12345678-120405",
+            [
+                new TransicaoPedidoDetalhada(1, EstadoPedido.Recebido, AgoraUtc, null),
+                new TransicaoPedidoDetalhada(2, EstadoPedido.Concluido, AgoraUtc.AddSeconds(1), "Finalizado")
+            ])
+        };
+
+        var resultado = await fixture.CriarServico().ObterHistoricoAsync(42, CancellationToken.None);
+
+        Assert.Equal(TipoResultadoConsulta.Sucesso, resultado.Tipo);
+        Assert.Equal(42, resultado.Valor?.PedidoId);
+        Assert.Collection(resultado.Valor!.Historico,
+            recebido => Assert.Equal(EstadoPedido.Recebido, recebido.Status),
+            concluido =>
+            {
+                Assert.Equal(EstadoPedido.Concluido, concluido.Status);
+                Assert.Equal("Finalizado", concluido.Detalhe);
+            });
+        Assert.Equal(TimeSpan.FromHours(-3), resultado.Valor.Historico.First().RegistradoEm.Offset);
+    }
+
     private static RespostaErroValidacao ExtrairErro(Resultado<RespostaCriarSolicitacao> resultado)
     {
         return resultado.Match<RespostaErroValidacao?>(_ => null, erro => erro)!;
@@ -184,11 +232,15 @@ public sealed partial class PedidoServiceTests
 
         public IReadOnlyCollection<EventoClienteDetalhado> Eventos { get; init; } = [];
 
+        public HistoricoPedidoDetalhado? Historico { get; init; }
+
         public FakeClienteRepositorio Clientes { get; private set; } = null!;
 
         public FakeProdutoRepositorio Produtos { get; private set; } = null!;
 
         public FakeEventoRepositorio EventoRepositorio { get; private set; } = null!;
+
+        public FakePedidoStatusRepositorio StatusRepositorio { get; private set; } = null!;
 
         public FakePublicadorEventoSolicitacao Publicador { get; } = new();
 
@@ -197,8 +249,22 @@ public sealed partial class PedidoServiceTests
             Clientes = new FakeClienteRepositorio(ClienteExiste);
             Produtos = new FakeProdutoRepositorio(ProdutoExiste);
             EventoRepositorio = new FakeEventoRepositorio(Eventos);
+            StatusRepositorio = new FakePedidoStatusRepositorio(Historico);
 
-            return new PedidoService(Clientes, Produtos, EventoRepositorio, Publicador, new FakeTimeProvider(AgoraUtc));
+            return new PedidoService(Clientes, Produtos, EventoRepositorio, Publicador, new FakeTimeProvider(AgoraUtc),
+                StatusRepositorio);
+        }
+    }
+
+    private sealed class FakePedidoStatusRepositorio(HistoricoPedidoDetalhado? historico) : IPedidoStatusRepositorio
+    {
+        public int Consultas { get; private set; }
+
+        public Task<HistoricoPedidoDetalhado?> ObterHistoricoAsync(long pedidoId,
+            CancellationToken tokenCancelamento)
+        {
+            Consultas++;
+            return Task.FromResult(historico);
         }
     }
 
